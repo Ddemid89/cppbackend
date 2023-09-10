@@ -1,0 +1,301 @@
+{
+  "deps_env_info": {
+    "BOOST_ROOT": "/home/aleksey/.conan/data/boost/1.78.0/_/_/package/8cc3305c27e5ff838d1c7590662e309638310dfc",
+    "PATH": [
+      "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/bin"
+    ]
+  },
+  "deps_user_info": {
+    "boost": {
+      "stacktrace_addr2line_available": "True"
+    },
+    "zlib": {},
+    "bzip2": {},
+    "libbacktrace": {}
+  },
+  "dependencies": [
+    {
+      "version": "1.78.0",
+      "description": "Boost provides free peer-reviewed portable C++ source libraries",
+      "rootpath": "/home/aleksey/.conan/data/boost/1.78.0/_/_/package/8cc3305c27e5ff838d1c7590662e309638310dfc",
+      "sysroot": "",
+      "include_paths": [
+        "/home/aleksey/.conan/data/boost/1.78.0/_/_/package/8cc3305c27e5ff838d1c7590662e309638310dfc/include"
+      ],
+      "lib_paths": [
+        "/home/aleksey/.conan/data/boost/1.78.0/_/_/package/8cc3305c27e5ff838d1c7590662e309638310dfc/lib"
+      ],
+      "bin_paths": [],
+      "build_paths": [],
+      "res_paths": [],
+      "libs": [
+        "boost_contract",
+        "boost_coroutine",
+        "boost_fiber_numa",
+        "boost_fiber",
+        "boost_context",
+        "boost_graph",
+        "boost_iostreams",
+        "boost_json",
+        "boost_locale",
+        "boost_log_setup",
+        "boost_log",
+        "boost_math_c99",
+        "boost_math_c99f",
+        "boost_math_c99l",
+        "boost_math_tr1",
+        "boost_math_tr1f",
+        "boost_math_tr1l",
+        "boost_nowide",
+        "boost_program_options",
+        "boost_random",
+        "boost_regex",
+        "boost_stacktrace_addr2line",
+        "boost_stacktrace_backtrace",
+        "boost_stacktrace_basic",
+        "boost_stacktrace_noop",
+        "boost_timer",
+        "boost_type_erasure",
+        "boost_thread",
+        "boost_chrono",
+        "boost_container",
+        "boost_date_time",
+        "boost_unit_test_framework",
+        "boost_prg_exec_monitor",
+        "boost_test_exec_monitor",
+        "boost_exception",
+        "boost_wave",
+        "boost_filesystem",
+        "boost_atomic",
+        "boost_wserialization",
+        "boost_serialization"
+      ],
+      "system_libs": [
+        "dl",
+        "rt",
+        "pthread"
+      ],
+      "defines": [
+        "BOOST_STACKTRACE_ADDR2LINE_LOCATION=\"/usr/bin/addr2line\"",
+        "BOOST_STACKTRACE_USE_ADDR2LINE",
+        "BOOST_STACKTRACE_USE_BACKTRACE",
+        "BOOST_STACKTRACE_USE_NOOP"
+      ],
+      "cflags": [],
+      "cxxflags": [],
+      "sharedlinkflags": [],
+      "exelinkflags": [],
+      "frameworks": [],
+      "framework_paths": [],
+      "names": {
+        "cmake_find_package": "Boost",
+        "cmake_find_package_multi": "Boost"
+      },
+      "filenames": {
+        "cmake_find_package": "Boost",
+        "cmake_find_package_multi": "Boost"
+      },
+      "build_modules": {},
+      "build_modules_paths": {},
+      "cppflags": [],
+      "name": "boost"
+    },
+    {
+      "version": "1.2.13",
+      "description": "A Massively Spiffy Yet Delicately Unobtrusive Compression Library (Also Free, Not to Mention Unencumbered by Patents)",
+      "rootpath": "/home/aleksey/.conan/data/zlib/1.2.13/_/_/package/be27726f9885116da1158027505be62e913cd585",
+      "sysroot": "",
+      "include_paths": [
+        "/home/aleksey/.conan/data/zlib/1.2.13/_/_/package/be27726f9885116da1158027505be62e913cd585/include"
+      ],
+      "lib_paths": [
+        "/home/aleksey/.conan/data/zlib/1.2.13/_/_/package/be27726f9885116da1158027505be62e913cd585/lib"
+      ],
+      "bin_paths": [],
+      "build_paths": [
+        "/home/aleksey/.conan/data/zlib/1.2.13/_/_/package/be27726f9885116da1158027505be62e913cd585/"
+      ],
+      "res_paths": [],
+      "libs": [
+        "z"
+      ],
+      "system_libs": [],
+      "defines": [],
+      "cflags": [],
+      "cxxflags": [],
+      "sharedlinkflags": [],
+      "exelinkflags": [],
+      "frameworks": [],
+      "framework_paths": [],
+      "names": {
+        "cmake_find_package": "ZLIB",
+        "cmake_find_package_multi": "ZLIB"
+      },
+      "filenames": {},
+      "build_modules": {},
+      "build_modules_paths": {},
+      "cppflags": [],
+      "name": "zlib"
+    },
+    {
+      "version": "1.0.8",
+      "description": "bzip2 is a free and open-source file compression program that uses the Burrows Wheeler algorithm.",
+      "rootpath": "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515",
+      "sysroot": "",
+      "include_paths": [
+        "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/include"
+      ],
+      "lib_paths": [
+        "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/lib"
+      ],
+      "bin_paths": [
+        "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/bin"
+      ],
+      "build_paths": [
+        "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/"
+      ],
+      "res_paths": [],
+      "libs": [
+        "bz2"
+      ],
+      "system_libs": [],
+      "defines": [],
+      "cflags": [],
+      "cxxflags": [],
+      "sharedlinkflags": [],
+      "exelinkflags": [],
+      "frameworks": [],
+      "framework_paths": [],
+      "names": {
+        "cmake_find_package": "BZip2",
+        "cmake_find_package_multi": "BZip2"
+      },
+      "filenames": {},
+      "build_modules": {
+        "cmake_find_package": [
+          "lib/cmake/conan-official-bzip2-variables.cmake"
+        ]
+      },
+      "build_modules_paths": {
+        "cmake_find_package": [
+          "/home/aleksey/.conan/data/bzip2/1.0.8/_/_/package/76bd63d0cd275bc555bda09b7f93740254ba3515/lib/cmake/conan-official-bzip2-variables.cmake"
+        ]
+      },
+      "cppflags": [],
+      "name": "bzip2"
+    },
+    {
+      "version": "cci.20210118",
+      "description": "A C library that may be linked into a C/C++ program to produce symbolic backtraces.",
+      "rootpath": "/home/aleksey/.conan/data/libbacktrace/cci.20210118/_/_/package/be27726f9885116da1158027505be62e913cd585",
+      "sysroot": "",
+      "include_paths": [
+        "/home/aleksey/.conan/data/libbacktrace/cci.20210118/_/_/package/be27726f9885116da1158027505be62e913cd585/include"
+      ],
+      "lib_paths": [
+        "/home/aleksey/.conan/data/libbacktrace/cci.20210118/_/_/package/be27726f9885116da1158027505be62e913cd585/lib"
+      ],
+      "bin_paths": [],
+      "build_paths": [
+        "/home/aleksey/.conan/data/libbacktrace/cci.20210118/_/_/package/be27726f9885116da1158027505be62e913cd585/"
+      ],
+      "res_paths": [],
+      "libs": [
+        "backtrace"
+      ],
+      "system_libs": [],
+      "defines": [],
+      "cflags": [],
+      "cxxflags": [],
+      "sharedlinkflags": [],
+      "exelinkflags": [],
+      "frameworks": [],
+      "framework_paths": [],
+      "names": {},
+      "filenames": {},
+      "build_modules": {},
+      "build_modules_paths": {},
+      "cppflags": [],
+      "name": "libbacktrace"
+    }
+  ],
+  "settings": {
+    "arch": "x86_64",
+    "arch_build": "x86_64",
+    "build_type": "Debug",
+    "compiler": "gcc",
+    "compiler.libcxx": "libstdc++11",
+    "compiler.version": "11",
+    "os": "Linux",
+    "os_build": "Linux"
+  },
+  "options": {
+    "boost": {
+      "addr2line_location": "/usr/bin/addr2line",
+      "asio_no_deprecated": "False",
+      "buildid": "None",
+      "bzip2": "True",
+      "debug_level": "0",
+      "diagnostic_definitions": "False",
+      "error_code_header_only": "False",
+      "extra_b2_flags": "None",
+      "fPIC": "True",
+      "filesystem_no_deprecated": "False",
+      "filesystem_use_std_fs": "False",
+      "filesystem_version": "None",
+      "header_only": "False",
+      "i18n_backend": "deprecated",
+      "i18n_backend_iconv": "libc",
+      "i18n_backend_icu": "False",
+      "layout": "system",
+      "lzma": "False",
+      "magic_autolink": "False",
+      "multithreading": "True",
+      "namespace": "boost",
+      "namespace_alias": "False",
+      "numa": "True",
+      "pch": "True",
+      "python_executable": "None",
+      "python_version": "None",
+      "segmented_stacks": "False",
+      "shared": "False",
+      "system_no_deprecated": "False",
+      "system_use_utf8": "False",
+      "visibility": "hidden",
+      "with_stacktrace_backtrace": "True",
+      "without_atomic": "False",
+      "without_chrono": "False",
+      "without_container": "False",
+      "without_context": "False",
+      "without_contract": "False",
+      "without_coroutine": "False",
+      "without_date_time": "False",
+      "without_exception": "False",
+      "without_fiber": "False",
+      "without_filesystem": "False",
+      "without_graph": "False",
+      "without_graph_parallel": "True",
+      "without_iostreams": "False",
+      "without_json": "False",
+      "without_locale": "False",
+      "without_log": "False",
+      "without_math": "False",
+      "without_mpi": "True",
+      "without_nowide": "False",
+      "without_program_options": "False",
+      "without_python": "True",
+      "without_random": "False",
+      "without_regex": "False",
+      "without_serialization": "False",
+      "without_stacktrace": "False",
+      "without_system": "False",
+      "without_test": "False",
+      "without_thread": "False",
+      "without_timer": "False",
+      "without_type_erasure": "False",
+      "without_wave": "False",
+      "zlib": "True",
+      "zstd": "False"
+    }
+  }
+}
