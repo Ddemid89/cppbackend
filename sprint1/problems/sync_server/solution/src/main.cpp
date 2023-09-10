@@ -55,7 +55,7 @@ StringResponse HandleRequest(StringRequest&& req) {
         res = text_response(http::status::ok, body);
     } else if (method == http::verb::head) {
         res = text_response(http::status::ok, "");
-        res.content_length("Hello, "s.size() + req.target().size());
+        res.content_length("Hello, "s.size() + req.target().size() - "/"s.size());
     } else {
         res = text_response(http::status::method_not_allowed, "Invalid method");
         res.insert("Allow"sv, "GET, HEAD"sv);
