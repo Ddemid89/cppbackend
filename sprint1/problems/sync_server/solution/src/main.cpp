@@ -51,7 +51,7 @@ StringResponse HandleRequest(StringRequest&& req) {
     http::verb method = req.method();
 
     if (method == http::verb::get) {
-        std::string body = "Hello, "s + static_cast<std::string>(req.at("target"s));
+        std::string body = "Hello, "s + static_cast<std::string>(req.target().substr(1));
         res = text_response(http::status::ok, body);
     } else if (method == http::verb::head) {
         res = text_response(http::status::ok, "");
