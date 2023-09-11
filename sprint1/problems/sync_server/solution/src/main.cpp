@@ -54,8 +54,24 @@ StringResponse HandleRequest(StringRequest&& req) {
         std::string body = "Hello, "s + static_cast<std::string>(req.target().substr(1));
         res = text_response(http::status::ok, body);
     } else if (method == http::verb::head) {
+        res = text_response(http::status::ok, "");
+        res.content_length("Hello, "s.size() + req.target().size() - "/"s.size());
+        /* Первый вариант
+        res = text_response(http::status::ok, "");
+        res.content_length("Hello, "s.size() + req.target().size() - "/"s.size());
+        */
+
+        /* Еще вариант
         size_t size = "Hello, "s.size() + req.target().size() - "/"s.size();
         res = text_response(http::status::ok, std::string(" ", size));
+        */
+        /*
+        size_t size = "Hello, "s.size() + req.target().size() - "/"s.size();
+        res = StringResponse(http::status::ok, req.version());
+        res.set(http::field::content_type, ContentType::TEXT_HTML);
+        res.content_length(size);
+        res.keep_alive(req.keep_alive());
+        */
     } else {
         res = text_response(http::status::method_not_allowed, "Invalid method");
         res.insert("Allow"sv, "GET, HEAD"sv);
