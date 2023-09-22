@@ -31,6 +31,17 @@ public:
 
 
     void Execute() {
+        bread_->StartBake(*gas_cooker_, [order = shared_from_this()] {
+            auto timer = std::make_shared<net::steady_timer>(order->GetContext(), 1s);
+
+            timer->async_wait([timer, order](sys::error_code ec){
+                order->GetBread().StopBaking();
+                net::post(order->GetStrand(), [order]{
+                    order->Ready();
+                });
+            });
+        });
+
         sausage_->StartFry(*gas_cooker_, [order = shared_from_this()] {
             //Когда началась готовка, заводим таймер
             //Когда таймер сработал, говорим заказу, что что-то готово
@@ -47,17 +58,6 @@ public:
                 //Сообщаем об этом order
                 //Если булочка готова к этому моменту, order вызовет handler
                 order->GetSausage().StopFry();
-                net::post(order->GetStrand(), [order]{
-                    order->Ready();
-                });
-            });
-        });
-
-        bread_->StartBake(*gas_cooker_, [order = shared_from_this()] {
-            auto timer = std::make_shared<net::steady_timer>(order->GetContext(), 1s);
-
-            timer->async_wait([timer, order](sys::error_code ec){
-                order->GetBread().StopBaking();
                 net::post(order->GetStrand(), [order]{
                     order->Ready();
                 });
