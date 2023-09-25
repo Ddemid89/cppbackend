@@ -32,6 +32,13 @@ void Game::AddMap(Map map) {
             map_id_to_index_.erase(it);
             throw;
         }
+        try {
+            maps_info_.emplace_back(maps_.back().GetId(), maps_.back().GetName());
+        } catch (...) {
+            maps_.pop_back();
+            map_id_to_index_.erase(it);
+            throw;
+        }
     }
 }
 

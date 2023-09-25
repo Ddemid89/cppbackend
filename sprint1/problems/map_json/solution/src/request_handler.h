@@ -5,14 +5,126 @@
 #include <string_view>
 #include <iostream>
 
+#include <boost/json.hpp>
+
+namespace json = boost::json;
+
+namespace model {
+void tag_invoke (json::value_from_tag, json::value& jv, const Road& road);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Building& building);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Office& office);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Map& map);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const MapInfo& map);
+} // namespace model
+
 
 namespace http_handler {
 namespace beast = boost::beast;
 namespace http = beast::http;
+namespace json = boost::json;
 using HttpResponse = http::response<http::string_body>;
 using namespace std::literals;
 
 namespace  {
+enum class Format {
+    JSON
+};
+
+template <typename Body, typename Allocator>
+class ResponseMaker {
+public:
+    using ResponseType = http::response<Body, http::basic_fields<Allocator>>;
+    ResponseMaker(http::request<Body, http::basic_fields<Allocator>>& req) : req_(req) {}
+
+    ResponseType MakeBadRequestResponse(const std::string& body) {
+        return MakeResponse(body, http::status::bad_request);
+    }
+
+    ResponseType MakeOkResponse(const std::string& body) {
+        return MakeResponse(body, http::status::ok);
+    }
+
+    ResponseType MakeNotFoundResponse(const std::string& body) {
+        return MakeResponse(body, http::status::not_found);
+    }
+
+private:
+    ResponseType MakeResponse(const std::string& body, http::status status) {
+        ResponseType result(status, req_.version());
+        result.body() = body;
+        result.content_length(body.size());
+        result.keep_alive(req_.keep_alive());
+        result.set(http::field::content_type, content_type_);
+        return result;
+    }
+
+    http::request<Body, http::basic_fields<Allocator>>& req_;
+    const std::string content_type_ = "application/json";
+};
+
+template <typename Body, typename Allocator>
+ResponseMaker<Body, Allocator>
+GetResponseMaker(http::request<Body, http::basic_fields<Allocator>>& req) {
+    return ResponseMaker<Body, Allocator>(req);
+}
+
+class BodyMaker{
+public:
+    virtual std::string MakeBadRequestBody() = 0;
+    virtual std::string MakeNotFoundBody() = 0;
+    virtual std::string MakeOneMapBody(const model::Map&) = 0;
+    virtual std::string MakeMapsBody(const std::vector<model::MapInfo>&) = 0;
+    virtual ~BodyMaker() = default;
+};
+
+class JsonBodyMaker : public BodyMaker{
+public:
+    std::string MakeBadRequestBody() override {
+        static std::string result = GetBadRequestBodyTxt();
+        return result;
+    }
+
+    std::string MakeNotFoundBody() override {
+        static std::string result = GetNotFoundBodyTxt();
+        return result;
+    }
+
+    std::string MakeOneMapBody(const model::Map& map) override {
+        return json::serialize(json::value_from(map));
+    }
+
+    std::string MakeMapsBody(const std::vector<model::MapInfo>& maps) override {
+        return json::serialize(json::value_from(maps));
+    }
+private:
+    std::string GetBadRequestBodyTxt () {
+        json::value jv = {
+            {"code", "badRequest"},
+            {"message", "Bad request"}
+        };
+        return json::serialize(jv);
+    }
+
+    std::string GetNotFoundBodyTxt () {
+        json::value jv = {
+            {"code", "mapNotFound"},
+            {"message", "Map not found"}
+        };
+        return json::serialize(jv);
+    }
+};
+
+std::unique_ptr<BodyMaker> GetBodyMaker(Format format) {
+    if (format == Format::JSON) {
+        return std::make_unique<JsonBodyMaker>();
+    }
+    throw std::logic_error("Type not available!");
+}
+
 std::vector<std::string_view> ParseTarget(std::string_view target) {
     std::vector<std::string_view> result;
     size_t start = 0;
@@ -32,127 +144,7 @@ std::vector<std::string_view> ParseTarget(std::string_view target) {
 
     return result;
 }
-
 } //namespace
-
-class MapConverter{
-public:
-    virtual std::string ConvertOneMap(const model::Map&) = 0;
-    virtual std::string ConvertRoad(const model::Road&) = 0;
-    virtual std::string ConvertOneMapShort(const model::Map&) = 0;
-
-    //virtual HttpResponse ConvertSeveralMaps(model::Map) = 0;
-protected:
-    ~MapConverter() = default;
-};
-
-class MapJsonConverter : public MapConverter{
-public:
-    std::string ConvertRoad(const model::Road& road) override {
-        std::string res = "{\"x0\": ";
-        res.append(std::to_string(road.GetStart().x));
-        res.append(", \"y0\": ");
-        res.append(std::to_string(road.GetStart().y));
-
-        if (road.GetStart().x == road.GetEnd().x) {
-            res.append(", \"y1\": ");
-            res.append(std::to_string(road.GetEnd().y));
-        } else {
-            res.append(", \"x1\": ");
-            res.append(std::to_string(road.GetEnd().x));
-        }
-
-        res.append("}");
-
-        return res;
-    }
-
-    std::string ConvertOneMapShort(const model::Map& map) override {
-        std::string res = "{\"id\": \"";
-        res.append(*map.GetId());
-        res.append("\", \"name\": \"");
-        res.append(map.GetName());
-        res.append("\"}");
-
-        return res;
-    }
-
-    std::string ConvertOneMap(const model::Map& map) override {
-        std::string result = "{\n\t\"id\": \""s.append(*map.GetId());
-        result.append("\",\n\t\"name\": \""s).append(map.GetName());
-        result.append("\",\n\t\"roads\": [\n\t\t"s);
-
-        bool is_first = true;
-
-        for (auto& road : map.GetRoads()) {
-            if (!is_first) {
-                result.append(",\n\t\t");
-            }
-            is_first = false;
-            result.append(ConvertRoad(road));
-        }
-        result.append("\n\t],\n\t\"buildings\": [\n\t\t");
-
-        is_first = true;
-        for (auto& building : map.GetBuildings()) {
-            if (!is_first) {
-                result.append(",\n\t\t");
-            }
-            is_first = false;
-
-            result.append(ConvertBuilding(building));
-        }
-
-        result.append("\n\t],\n\t\"offices\": [\n\t\t");
-
-        is_first = true;
-        for (auto& office : map.GetOffices()) {
-            if (!is_first) {
-                result.append(",\n\t\t");
-            }
-            is_first = false;
-
-            result.append(ConvertOffice(office));
-        }
-        result.append("\n\t]\n}");
-
-        return result;
-    }
-private:
-    std::string ConvertBuilding(const model::Building& building) {
-        std::string result;
-
-        result.append("{\"x\": ");
-        result.append(std::to_string(building.GetBounds().position.x));
-        result.append(", \"y\": ");
-        result.append(std::to_string(building.GetBounds().position.y));
-        result.append(", \"w\": ");
-        result.append(std::to_string(building.GetBounds().size.width));
-        result.append(", \"h\": ");
-        result.append(std::to_string(building.GetBounds().size.height));
-        result.append("}");
-
-        return result;
-    }
-
-    std::string ConvertOffice(const model::Office& office) {
-        std::string result;
-
-        result.append("{\"id\": \"");
-        result.append(*office.GetId());
-        result.append("\", \"x\": ");
-        result.append(std::to_string(office.GetPosition().x));
-        result.append(", \"y\": ");
-        result.append(std::to_string(office.GetPosition().y));
-        result.append(", \"offsetX\": ");
-        result.append(std::to_string(office.GetOffset().dx));
-        result.append(", \"offsetY\": ");
-        result.append(std::to_string(office.GetOffset().dy));
-        result.append("}");
-
-        return result;
-    }
-};
 
 
 
@@ -167,8 +159,6 @@ public:
 
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
-        using HttpRequest = http::request<http::string_body>;
-        HttpRequest req2;
         bool is_get = req.method() == http::verb::get;
         const auto& target = req.target();
 
@@ -176,129 +166,43 @@ public:
 
         HttpResponse response;
 
-        if (is_get) {
-            if (!parsed_target.empty()) {
-                if(parsed_target.at(0) == "api") {
-                    response = HandleApiRequest(parsed_target, 1);
-                } else {
-                    //Пока поддерживаются запросы только к /api/
-                    response = GetBadRequestResponse();
-                }
-            } else {
-                //Пустые запросы не поддерживаются
-                response = GetBadRequestResponse();
-            }
-        } else {
-            //Пока не поддерживается ничего, кроме GET
-            response = GetBadRequestResponse();
+        Format format = Format::JSON;
+
+        //auto resp_maker = GetNormResponseMaker(req);
+        auto resp_maker = GetResponseMaker(req);
+        std::unique_ptr<BodyMaker> body_maker = GetBodyMaker(format);
+
+        if (parsed_target.size() < 3 || parsed_target.size() > 4) {
+            send(resp_maker.MakeBadRequestResponse(body_maker->MakeBadRequestBody()));
+            return;
         }
 
-        response.version(req.version());
-        response.set(http::field::content_type, "application/json");
-        response.keep_alive(req.keep_alive());
-        send(response);
+        if (parsed_target.at(0) != "api"s
+            || parsed_target.at(1) != "v1"s
+            || parsed_target.at(2) != "maps"s) {
+            send(resp_maker.MakeBadRequestResponse(body_maker->MakeBadRequestBody()));
+            return;
+        }
+
+        if (parsed_target.size() == 3) {
+            send(resp_maker.MakeOkResponse(body_maker->MakeMapsBody(game_.GetMapsInfo())));
+            return;
+        }
+
+        model::Map::Id map_id(std::string(parsed_target.at(3)));
+
+        auto map = game_.FindMap(map_id);
+
+        if (map == nullptr) {
+            send(resp_maker.MakeNotFoundResponse(body_maker->MakeNotFoundBody()));
+            return;
+        } else {
+            send(resp_maker.MakeOkResponse(body_maker->MakeOneMapBody(*map)));
+            return;
+        }
     }
 
 private:
-    HttpResponse HandleApiRequest(const std::vector<std::string_view>& target, size_t level) {
-        if (target.size() > level) {
-            if (target.at(level) == "v1") {
-                return HandleV1Request(target, level + 1);
-            } else {
-                //Поддерживаются только запросы к /api/v1/
-                return GetBadRequestResponse();
-            }
-        } else {
-            //Не поддерживаются запросы просто к /api/
-            return GetBadRequestResponse();
-        }
-    }
-
-    HttpResponse HandleV1Request(const std::vector<std::string_view>& target, size_t level) {
-        if (target.size() > level) {
-            if (target.at(level) == "maps") {
-                return HandleMapsRequest(target, level + 1);
-            } else {
-                //Поддерживаются запросы только к /api/v1/maps
-                return GetBadRequestResponse();
-            }
-        } else {
-            //Не поддерживаются запросы просто к /api/v1/
-            return GetBadRequestResponse();
-        }
-    }
-
-    HttpResponse HandleMapsRequest(const std::vector<std::string_view>& target, size_t level) {
-        if (target.size() > level) {
-            if (target.size() == level + 1) {
-                return HandleOneMapResponse(target.at(level));
-            } else {
-                // Не поддерживается .../maps/some_map/...
-                return GetBadRequestResponse();
-            }
-        } else {
-            return HandleAllMapsResponse();
-        }
-    }
-
-    HttpResponse HandleAllMapsResponse() {
-        MapJsonConverter converter;
-        HttpResponse maps_response;
-
-        auto& maps = game_.GetMaps();
-        std::string body = "[\n\t";
-
-        bool is_first = true;
-
-        for (auto& map : maps) {
-            if (!is_first) {
-                body.append(",\n\t");
-            }
-            is_first = false;
-            body.append(converter.ConvertOneMapShort(map));
-        }
-
-        body.append("\n]");
-
-        maps_response.body() = body;
-        maps_response.content_length(maps_response.body().size());
-        maps_response.result(http::status::ok);
-        return maps_response;
-    }
-
-    HttpResponse HandleOneMapResponse(std::string_view map) {
-        model::Map::Id map_id{std::string(map)};
-        auto map_ptr = game_.FindMap(map_id);
-        MapJsonConverter converter;
-
-        if (map_ptr != nullptr) {
-            HttpResponse map_response;
-            map_response.body() = converter.ConvertOneMap(*map_ptr);
-            map_response.content_length(map_response.body().size());
-            map_response.result(http::status::ok);
-            return map_response;
-        } else {
-            HttpResponse not_found;
-            not_found.body() = "{ \n\t\"code\": \"mapNotFound\", \n\t\"message\": \"Map not found\"\n}";
-            not_found.content_length(not_found.body().size());
-            not_found.result(http::status::not_found);
-            return not_found;
-        }
-    }
-
-    HttpResponse MakeBadRequestResponse() {
-        HttpResponse result;
-        result.body() = "{\n\t\"code\": \"badRequest\",\n\t\"message\": \"Bad request\"\n}";
-        result.content_length(result.body().size());
-        result.result(http::status::bad_request);
-        return result;
-    }
-
-    const HttpResponse& GetBadRequestResponse() {
-        const static HttpResponse bad_request_response = MakeBadRequestResponse();
-        return bad_request_response;
-    }
-
     model::Game& game_;
 };
 

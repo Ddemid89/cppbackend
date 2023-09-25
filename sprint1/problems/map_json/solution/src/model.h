@@ -167,6 +167,22 @@ private:
     Offices offices_;
 };
 
+class MapInfo {
+public:
+    MapInfo(const Map::Id& id, std::string_view name) : id_(*id), name_(name) {}
+
+    std::string_view GetId() const {
+        return id_;
+    }
+
+    std::string_view GetName() const {
+        return name_;
+    }
+private:
+    std::string_view id_;
+    std::string_view name_;
+};
+
 class Game {
 public:
     using Maps = std::vector<Map>;
@@ -175,6 +191,10 @@ public:
 
     const Maps& GetMaps() const noexcept {
         return maps_;
+    }
+
+    const std::vector<MapInfo>& GetMapsInfo() const noexcept {
+        return maps_info_;
     }
 
     const Map* FindMap(const Map::Id& id) const noexcept {
@@ -190,6 +210,8 @@ private:
 
     std::vector<Map> maps_;
     MapIdToIndex map_id_to_index_;
+
+    std::vector<MapInfo> maps_info_;
 };
 
 }  // namespace model

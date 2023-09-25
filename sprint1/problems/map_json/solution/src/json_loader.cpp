@@ -2,87 +2,109 @@
 
 #include <fstream>
 #include <string>
+#include <iostream>
 
 #include <boost/json.hpp>
 
 namespace json = boost::json;
 
-namespace json_loader {
-
 namespace  {
-
-std::string StringFromJson(json::string str) {
+std::string StringFromJson(const json::string& str) {
     return std::string(str.data(), str.size());
 }
 
-model::Road RoadFromJson(const json::value& road) {
-    model::Coord x0 = road.at("x0").as_int64();
-    model::Coord y0 = road.at("y0").as_int64();
+template <typename T>
+typename T::Id GetId(const json::value& id) {
+    return typename T::Id{StringFromJson(id.at("id").as_string())};
+}
+
+int GetInt(const json::value& value, json::string_view id) {
+    return value.at(id).as_int64();
+}
+
+template <typename T>
+std::vector<T> GetVector(const json::value& val, json::string_view id) {
+    return value_to<std::vector<T>>(val.at(id));
+}
+} // namespace
+
+namespace model {
+Road tag_invoke(json::value_to_tag<Road>&, const json::value& road) {
+    int x0 = GetInt(road, "x0");
+    int y0 = GetInt(road, "y0");
 
     if (road.as_object().contains("x1")) {
-        model::Coord x1 = road.at("x1").as_int64();
-        return {model::Road::HORIZONTAL, {x0, y0}, x1};
+        return Road {
+            Road::HORIZONTAL,
+            Point{x0, y0},
+            GetInt(road, "x1")
+        };
     } else {
-        model::Coord y1 = road.at("y1").as_int64();
-        return {model::Road::VERTICAL, {x0, y0}, y1};
+        return model::Road {
+            Road::VERTICAL,
+            Point{x0, y0},
+            GetInt(road, "y1")
+        };
     }
 }
 
-model::Building BuildingFromJson(const json::value& building) {
-    model::Coord x = building.at("x").as_int64();
-    model::Coord y = building.at("y").as_int64();
-
-    model::Dimension w = building.at("w").as_int64();
-    model::Dimension h = building.at("h").as_int64();
-
-    return model::Building{{{x, y}, {w, h}}};
+Building tag_invoke(json::value_to_tag<Building>&, const json::value building) {
+    return Building {
+        Rectangle {
+            Point {
+                GetInt(building, "x"),
+                GetInt(building, "y")
+            },
+            Size {
+                GetInt(building, "w"),
+                GetInt(building, "h")
+            }
+        }
+    };
 }
 
-model::Office OfficeFromJson(const json::value& office) {
-    std::string id_str = StringFromJson(office.at("id").as_string());
-    model::Office::Id id(id_str);
-
-    model::Coord x = office.at("x").as_int64();
-    model::Coord y = office.at("y").as_int64();
-
-    model::Dimension offsetX = office.at("offsetX").as_int64();
-    model::Dimension offsetY = office.at("offsetY").as_int64();
-
-    model::Point coors{x, y};
-    model::Offset offset{offsetX, offsetY};
-
-    return {id, coors, offset};
+Office tag_invoke(json::value_to_tag<Office>&, const json::value office) {
+    return Office {
+        GetId<Office>(office),
+        Point {
+            GetInt(office, "x"),
+            GetInt(office, "y")
+        },
+        Offset {
+            GetInt(office, "offsetX"),
+            GetInt(office, "offsetY")
+        }
+    };
 }
 
-model::Map MapFromJson(const json::value& map) {
-    std::string id_str = StringFromJson(map.at("id").as_string());
-    model::Map::Id id(id_str);
+Map tag_invoke(json::value_to_tag<Map>&, const json::value map) {
+    Map result {
+        GetId<Map>(map),
+        StringFromJson(map.at("name").as_string())
+    };
 
-    std::string name = StringFromJson(map.at("name").as_string());
-
-    std::string std_name(name.begin(), name.end());
-
-    model::Map result(id, std_name);
-
-    auto& roads     = map.at("roads").as_array();
-    auto& buildings = map.at("buildings").as_array();
-    auto& offices   = map.at("offices").as_array();
+    auto roads = GetVector<Road>(map, "roads");
+    auto buildings = GetVector<Building>(map, "buildings");
+    auto offices = GetVector<Office>(map, "offices");
 
     for (auto& road : roads) {
-        result.AddRoad(RoadFromJson(road));
+        result.AddRoad(road);
     }
 
     for (auto& building : buildings) {
-        result.AddBuilding(BuildingFromJson(building));
+        result.AddBuilding(building);
     }
 
     for (auto& office : offices) {
-        result.AddOffice(OfficeFromJson(office));
+        result.AddOffice(std::move(office));
     }
 
     return result;
 }
-} // namespace
+} // namespace model
+
+
+namespace json_loader {
 
 model::Game LoadGame(const std::filesystem::path& json_path) {
     std::ifstream out(json_path);
@@ -98,17 +120,19 @@ model::Game LoadGame(const std::filesystem::path& json_path) {
 
     auto config_json = json::parse(json_str);
 
-    auto& maps_array_json = config_json.at("maps").as_array();
+    auto maps = GetVector<model::Map>(config_json, "maps");
 
-    for (auto& map : maps_array_json) {
-        game.AddMap(MapFromJson(map));
+    for (auto& map : maps) {
+        game.AddMap(map);
     }
-
-    // Загрузить содержимое файла json_path, например, в виде строки
-    // Распарсить строку как JSON, используя boost::json::parse
-    // Загрузить модель игры из файла
 
     return game;
 }
-
 }  // namespace json_loader
+
+
+
+
+
+
+
