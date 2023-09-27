@@ -10,7 +10,7 @@ RUN apt update && \
 COPY conanfile.txt /app/
 RUN mkdir /app/build && \
 	cd /app/build && \
-	conan instal .. --build=missing
+	conan install .. --build=missing
 
 COPY ./src /app/src
 COPY ./data /app/data
