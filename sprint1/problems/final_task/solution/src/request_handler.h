@@ -127,26 +127,23 @@ std::unique_ptr<BodyMaker> GetBodyMaker(Format format) {
 
 std::vector<std::string_view> ParseTarget(std::string_view target) {
     std::vector<std::string_view> result;
-    size_t start = 0;
 
-    for (int i = 0; i < target.size(); ++i) {
-        if (target.at(i) == '/') {
-            if (start != i) {
-                result.emplace_back(target.substr(start, i - start));
-            }
-            start = i + 1;
-        }
+    size_t start = target.find_first_not_of('/');
+    size_t end = target.find_first_of('/', start);
+
+    while (end != target.npos) {
+        result.emplace_back(target.substr(start, end - start));
+        start = target.find_first_not_of('/', end);
+        end = target.find_first_of('/', start);
     }
 
-    if (start != target.size()) {
+    if (start != target.npos) {
         result.emplace_back(target.substr(start));
     }
 
     return result;
 }
 } //namespace
-
-
 
 class RequestHandler {
 public:
@@ -164,15 +161,12 @@ public:
 
         auto parsed_target = ParseTarget(target);
 
-        HttpResponse response;
-
         Format format = Format::JSON;
 
-        //auto resp_maker = GetNormResponseMaker(req);
         auto resp_maker = GetResponseMaker(req);
         std::unique_ptr<BodyMaker> body_maker = GetBodyMaker(format);
 
-        if (parsed_target.size() < 3 || parsed_target.size() > 4) {
+        if (!is_get || parsed_target.size() < 3 || parsed_target.size() > 4) {
             send(resp_maker.MakeBadRequestResponse(body_maker->MakeBadRequestBody()));
             return;
         }
