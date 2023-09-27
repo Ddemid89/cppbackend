@@ -17,7 +17,7 @@ COPY ./data /app/data
 COPY CMakeLists.txt /app/
 
 RUN cd /app/build && \
-	cmake -DCMAKE_BUILD_TYPE=Release // && \
+	cmake -DCMAKE_BUILD_TYPE=Release .. && \
 	cmake --build .
 
 FROM ubuntu:22.04 as run
