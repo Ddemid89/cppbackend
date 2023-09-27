@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <deque>
 
 #include "tagged.h"
 
@@ -185,7 +186,7 @@ private:
 
 class Game {
 public:
-    using Maps = std::vector<Map>;
+    using Maps = std::deque<Map>;
 
     void AddMap(Map map);
 
@@ -208,7 +209,7 @@ private:
     using MapIdHasher = util::TaggedHasher<Map::Id>;
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
 
-    std::vector<Map> maps_;
+    Maps maps_;
     MapIdToIndex map_id_to_index_;
 
     std::vector<MapInfo> maps_info_;
