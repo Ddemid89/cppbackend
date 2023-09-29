@@ -29,7 +29,7 @@ namespace json = boost::json;
 using HttpResponse = http::response<http::string_body>;
 using namespace std::literals;
 
-namespace  {
+namespace detail {
 enum class Format {
     JSON
 };
@@ -38,7 +38,8 @@ template <typename Body, typename Allocator>
 class ResponseMaker {
 public:
     using ResponseType = http::response<Body, http::basic_fields<Allocator>>;
-    ResponseMaker(http::request<Body, http::basic_fields<Allocator>>& req) : req_(req) {}
+    ResponseMaker(http::request<Body, http::basic_fields<Allocator>>& req) : req_(req) {
+    }
 
     ResponseType MakeBadRequestResponse(const std::string& body) {
         return MakeResponse(body, http::status::bad_request);
@@ -83,67 +84,18 @@ public:
 
 class JsonBodyMaker : public BodyMaker{
 public:
-    std::string MakeBadRequestBody() override {
-        static std::string result = GetBadRequestBodyTxt();
-        return result;
-    }
-
-    std::string MakeNotFoundBody() override {
-        static std::string result = GetNotFoundBodyTxt();
-        return result;
-    }
-
-    std::string MakeOneMapBody(const model::Map& map) override {
-        return json::serialize(json::value_from(map));
-    }
-
-    std::string MakeMapsBody(const std::vector<model::MapInfo>& maps) override {
-        return json::serialize(json::value_from(maps));
-    }
+    std::string MakeBadRequestBody() override;
+    std::string MakeNotFoundBody() override;
+    std::string MakeOneMapBody(const model::Map& map) override;
+    std::string MakeMapsBody(const std::vector<model::MapInfo>& maps) override;
 private:
-    std::string GetBadRequestBodyTxt () {
-        json::value jv = {
-            {"code", "badRequest"},
-            {"message", "Bad request"}
-        };
-        return json::serialize(jv);
-    }
-
-    std::string GetNotFoundBodyTxt () {
-        json::value jv = {
-            {"code", "mapNotFound"},
-            {"message", "Map not found"}
-        };
-        return json::serialize(jv);
-    }
+    std::string GetBadRequestBodyTxt ();
+    std::string GetNotFoundBodyTxt ();
 };
 
-std::unique_ptr<BodyMaker> GetBodyMaker(Format format) {
-    if (format == Format::JSON) {
-        return std::make_unique<JsonBodyMaker>();
-    }
-    throw std::logic_error("Type not available!");
-}
-
-std::vector<std::string_view> ParseTarget(std::string_view target) {
-    std::vector<std::string_view> result;
-
-    size_t start = target.find_first_not_of('/');
-    size_t end = target.find_first_of('/', start);
-
-    while (end != target.npos) {
-        result.emplace_back(target.substr(start, end - start));
-        start = target.find_first_not_of('/', end);
-        end = target.find_first_of('/', start);
-    }
-
-    if (start != target.npos) {
-        result.emplace_back(target.substr(start));
-    }
-
-    return result;
-}
-} //namespace
+std::unique_ptr<BodyMaker> GetBodyMaker(Format format);
+std::vector<std::string_view> ParseTarget(std::string_view target);
+} //namespace detail
 
 class RequestHandler {
 public:
@@ -159,12 +111,12 @@ public:
         bool is_get = req.method() == http::verb::get;
         const auto& target = req.target();
 
-        auto parsed_target = ParseTarget(target);
+        auto parsed_target = detail::ParseTarget(target);
 
-        Format format = Format::JSON;
+        detail::Format format = detail::Format::JSON;
 
-        auto resp_maker = GetResponseMaker(req);
-        std::unique_ptr<BodyMaker> body_maker = GetBodyMaker(format);
+        auto resp_maker = detail::GetResponseMaker(req);
+        std::unique_ptr<detail::BodyMaker> body_maker = GetBodyMaker(format);
 
         if (!is_get || parsed_target.size() < 3 || parsed_target.size() > 4) {
             send(resp_maker.MakeBadRequestResponse(body_maker->MakeBadRequestBody()));

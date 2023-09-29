@@ -6,44 +6,43 @@
 
 #include <boost/json.hpp>
 
+#include "json_keys.h"
+
 namespace json = boost::json;
 
 namespace  {
+using namespace json_keys;
+
 std::string StringFromJson(const json::string& str) {
     return std::string(str.data(), str.size());
 }
 
 template <typename T>
 typename T::Id GetId(const json::value& id) {
-    return typename T::Id{StringFromJson(id.at("id").as_string())};
+    return typename T::Id{StringFromJson(id.at(id_key).as_string())};
 }
 
 int GetInt(const json::value& value, json::string_view id) {
     return value.at(id).as_int64();
 }
-
-template <typename T>
-std::vector<T> GetVector(const json::value& val, json::string_view id) {
-    return value_to<std::vector<T>>(val.at(id));
-}
 } // namespace
 
 namespace model {
 Road tag_invoke(json::value_to_tag<Road>&, const json::value& road) {
-    int x0 = GetInt(road, "x0");
-    int y0 = GetInt(road, "y0");
+    int x0 = GetInt(road, x0_key);
+    int y0 = GetInt(road, y0_key);
 
-    if (road.as_object().contains("x1")) {
+    if (road.as_object().contains(x1_key)) {
         return Road {
             Road::HORIZONTAL,
             Point{x0, y0},
-            GetInt(road, "x1")
+            GetInt(road, x1_key)
         };
     } else {
         return model::Road {
             Road::VERTICAL,
             Point{x0, y0},
-            GetInt(road, "y1")
+            GetInt(road, y1_key)
         };
     }
 }
@@ -52,12 +51,12 @@ Building tag_invoke(json::value_to_tag<Building>&, const json::value building) {
     return Building {
         Rectangle {
             Point {
-                GetInt(building, "x"),
-                GetInt(building, "y")
+                GetInt(building, x_key),
+                GetInt(building, y_key)
             },
             Size {
-                GetInt(building, "w"),
-                GetInt(building, "h")
+                GetInt(building, width_key),
+                GetInt(building, height_key)
             }
         }
     };
@@ -67,12 +66,12 @@ Office tag_invoke(json::value_to_tag<Office>&, const json::value office) {
     return Office {
         GetId<Office>(office),
         Point {
-            GetInt(office, "x"),
-            GetInt(office, "y")
+            GetInt(office, x_key),
+            GetInt(office, y_key)
         },
         Offset {
-            GetInt(office, "offsetX"),
-            GetInt(office, "offsetY")
+            GetInt(office, offsetX_key),
+            GetInt(office, offsetY_key)
         }
     };
 }
@@ -80,12 +79,12 @@ Office tag_invoke(json::value_to_tag<Office>&, const json::value office) {
 Map tag_invoke(json::value_to_tag<Map>&, const json::value map) {
     Map result {
         GetId<Map>(map),
-        StringFromJson(map.at("name").as_string())
+        StringFromJson(map.at(name_key).as_string())
     };
 
-    auto roads = GetVector<Road>(map, "roads");
-    auto buildings = GetVector<Building>(map, "buildings");
-    auto offices = GetVector<Office>(map, "offices");
+    auto roads = json::value_to<std::vector<Road>>(map.at(roads_key));
+    auto buildings = json::value_to<std::vector<Building>>(map.at(buildings_key));
+    auto offices = json::value_to<std::vector<Office>>(map.at(offices_key));
 
     for (auto& road : roads) {
         result.AddRoad(road);
@@ -120,7 +119,7 @@ model::Game LoadGame(const std::filesystem::path& json_path) {
 
     auto config_json = json::parse(json_str);
 
-    auto maps = GetVector<model::Map>(config_json, "maps");
+    auto maps = json::value_to<std::vector<model::Map>>(config_json.at(maps_key));
 
     for (auto& map : maps) {
         game.AddMap(map);
@@ -129,10 +128,3 @@ model::Game LoadGame(const std::filesystem::path& json_path) {
     return game;
 }
 }  // namespace json_loader
-
-
-
-
-
-
-
