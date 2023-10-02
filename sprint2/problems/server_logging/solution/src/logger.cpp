@@ -91,7 +91,7 @@ void JsonLogger::LogResponse(std::chrono::steady_clock::duration dur, unsigned i
 JsonLogger::JsonLogger() {
     logging::add_common_attributes();
     logging::add_console_log(
-        std::clog,
+        std::cout,
         keywords::format = &MyFormatter,
         keywords::auto_flush = true
     );
