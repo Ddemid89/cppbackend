@@ -32,4 +32,11 @@ COPY --from=build /app/build/bin/game_server /app/
 COPY ./data /app/data
 COPY ./static /app/static
 
+RUN ls
+RUN cd static
+RUN ls
+RUN cd ../
+RUN cd data
+RUN ls
+
 ENTRYPOINT ["/app/game_server", "/app/data/config.json /app/static/"]
