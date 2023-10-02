@@ -32,8 +32,8 @@ COPY --from=build /app/build/bin/game_server /app/
 COPY ./data /app/data
 COPY ./static /app/static
 
-RUN echo "app" && cd app && ls
-RUN echo "static" && cd static && ls && cd ../
+RUN echo "app" && cd app && ls && pwd
+RUN echo "app/static" && cd static && ls && pwd && cd ../
 RUN echo "cd data" && cd data && ls
 
 ENTRYPOINT ["/app/game_server", "/app/data/config.json /app/static/"]
