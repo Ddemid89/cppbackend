@@ -68,8 +68,6 @@ int main(int argc, const char* argv[]) {
 
         json_logger::JsonLogger& logger = json_logger::JsonLogger::GetInstance();
 
-        logger.LogServerStarted({address, port});
-
         // 5. Запустить обработчик HTTP-запросов, делегируя их обработчику запросов
         http_server::ServeHttp(ioc, {address, port}, [&l_handler](auto&& req, auto&& send) {
             l_handler(std::forward<decltype(req)>(req), std::forward<decltype(send)>(send));
@@ -77,7 +75,9 @@ int main(int argc, const char* argv[]) {
 
 
         // Эта надпись сообщает тестам о том, что сервер запущен и готов обрабатывать запросы
-        std::cout << "Server has started..."sv << std::endl;
+        //std::cout << "Server has started..."sv << std::endl;
+
+        logger.LogServerStarted({address, port});
 
         // 6. Запускаем обработку асинхронных операций
         RunWorkers(std::max(1u, num_threads), [&ioc] {
