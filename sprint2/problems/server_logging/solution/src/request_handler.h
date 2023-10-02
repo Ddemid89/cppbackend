@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include <boost/json.hpp>
+#include <boost/beast.hpp>
 
 namespace json = boost::json;
 
@@ -165,7 +166,7 @@ public:
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
         bool is_get = req.method() == http::verb::get;
-        const std::string_view target = req.target();
+        std::string_view target = req.target();
 
         auto resp_maker = detail::GetResponseMaker(req);
 
