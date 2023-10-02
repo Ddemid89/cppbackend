@@ -28,7 +28,7 @@ public:
     auto GetTimeStamp() const {
         const auto now = GetTime();
         const auto t_c = std::chrono::system_clock::to_time_t(now);
-        return std::put_time(std::localtime(&t_c), "%F %T");
+        return std::put_time(std::gmtime(&t_c), "%F %T");
     }
 
     std::ofstream GetCurrentFileName() {
@@ -42,7 +42,7 @@ public:
 
         char date[] = "YYYY_MM_DD";
         size_t max_size = std::size(date);
-        std::strftime(date, max_size, "%Y_%m_%d", std::localtime(&t_c));
+        std::strftime(date, max_size, "%Y_%m_%d", std::gmtime(&t_c));
 
         return "/var/log/sample_log_"s + date + ".log"s;
     }
