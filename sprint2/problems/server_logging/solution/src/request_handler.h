@@ -33,6 +33,7 @@ namespace json = boost::json;
 namespace sys = boost::system;
 using HttpResponse = http::response<http::string_body>;
 using namespace std::literals;
+namespace net = boost::asio;
 
 namespace body_type {
 const std::string html = "text/html"s; //.htm, .html: text/html
