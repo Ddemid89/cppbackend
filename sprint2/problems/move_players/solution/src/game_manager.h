@@ -18,7 +18,12 @@
 #include <boost/beast.hpp>
 
 
+
+
 #include <iostream>
+
+
+
 
 
 namespace game_manager {
@@ -45,18 +50,19 @@ struct Coords {
 };
 
 struct Speed {
-    double x_axis;
-    double y_axis;
+    double x_axis = 0;
+    double y_axis = 0;
 };
 
 enum class Direction {
     NORTH,
     EAST,
     SOUTH,
-    WEST
+    WEST,
+    NONE
 };
 
-std::string GetDirectionChar(Direction dir) {
+std::string GetStringDirection(Direction dir) {
     using namespace std::literals;
     if (dir == Direction::NORTH) {
         return "U"s;
@@ -67,13 +73,30 @@ std::string GetDirectionChar(Direction dir) {
     } else if (dir == Direction::EAST) {
         return "L"s;
     } else {
-        throw std::logic_error("not supported direction");
+        throw std::logic_error("Direction not supported");
+    }
+}
+
+std::optional<Direction> GetDirectionFromString(std::string_view dir) {
+    using namespace std::literals;
+    if (dir == "U"sv) {
+        return Direction::NORTH;
+    } else if (dir == "D"sv) {
+        return Direction::SOUTH;
+    } else if (dir == "L"sv) {
+        return Direction::WEST;
+    } else if (dir == "R"sv) {
+        return Direction::EAST;
+    } else if (dir == ""sv) {
+        return Direction::NONE;
+    } else {
+        return std::nullopt;
     }
 }
 
 struct State{
     Coords coor;
-    Speed speed = {0, 0};
+    Speed speed;
     Direction dir = Direction::NORTH;
 };
 
@@ -114,7 +137,8 @@ public:
             {
                 State state;
                 state.coor = RandomPlace();
-                players_.emplace_back(info.Id, info.name, state);
+                players_.emplace_back(info.Id, std::move(info.name), state);
+                id_for_player_[info.Id] = &players_.back();
                 handler(info);
             }
         );
@@ -130,10 +154,45 @@ public:
         );
     }
 
+    template<class Handler>
+    void MovePlayer(PlayerId player_id, Direction dir, Handler&& handler) {
+        net::dispatch(
+            strand_,
+            [this, player_id, dir, handler = std::forward<Handler>(handler)] {
+                auto it = id_for_player_.find(player_id);
+
+                if (it != id_for_player_.end()) {
+                    Player& player = *it->second;
+                    if (dir != Direction::NONE) {
+                        player.state.dir = dir;
+                    }
+                    player.state.speed = GetSpeed(dir);
+                    handler(Result::ok);
+                } else {
+                    throw std::runtime_error("GameSession: player not found");
+                }
+            }
+        );
+    }
+
 private:
     const model::Road& GetRandomRoad(){
         std::uniform_int_distribution<int> dis{0, static_cast<int>(map_.GetRoads().size() - 1)};
         return map_.GetRoads().at(dis(generator));
+    }
+
+    Speed GetSpeed(Direction dir) {
+        if (dir == Direction::NORTH) {
+            return {0., -map_.GetDogSpeed()};
+        } else if (dir == Direction::SOUTH) {
+            return {0., map_.GetDogSpeed()};
+        } else if (dir == Direction::EAST) {
+            return {map_.GetDogSpeed(), 0.};
+        } else if (dir == Direction::WEST) {
+            return {-map_.GetDogSpeed(), 0.};
+        } else {
+            return {0., 0.};
+        }
     }
 
     Coords RandomPlace() {
@@ -167,7 +226,8 @@ private:
 
     const model::Map& map_;
     net::strand<net::io_context::executor_type> strand_;
-    std::vector<Player> players_;
+    std::unordered_map<PlayerId, Player*> id_for_player_;
+    std::deque<Player> players_;
     //Сразу бронируем место для создателя сессии
     std::atomic<size_t> players_number_ = 1;
 
@@ -199,21 +259,6 @@ public:
         return game_.FindMap(id);
     }
 
-//    template<class Handler>
-//    void FindToken(Token token, Handler&& handler) {
-//        net::dispatch(
-//            tokens_strand_,
-//            [this, token = std::move(token), handler = std::forward<Handler>(handler)](){
-//                auto it = tokens_.find(*token);
-//                if (it != tokens_.end()) {
-//                    handler(it->second);
-//                } else {
-//                    handler(std::nullopt);
-//                }
-//            }
-//        );
-//    }
-
     template<class Handler>
     void Join(std::string name, model::Map::Id map, Handler&& handler) {
         PlayerInfo p_info;
@@ -232,13 +277,13 @@ private:
                     p_info.token = GetUniqueToken();
                 }
                 tokens_[p_info.token] = p_info.Id;
-                FindSession(std::move(p_info), std::move(map), std::forward<Handler>(handler));
+                FindOrCeateSession(std::move(p_info), std::move(map), std::forward<Handler>(handler));
             }
         );
     }
 
     template<class Handler>
-    void FindSession(PlayerInfo p_info, model::Map::Id map, Handler&& handler) {
+    void FindOrCeateSession(PlayerInfo p_info, model::Map::Id map, Handler&& handler) {
         net::dispatch(
             sessions_strand_,
             [this, p_info = std::move(p_info), map = std::move(map), handler = std::forward<Handler>(handler)]()mutable{
@@ -283,31 +328,68 @@ private:
 public:
     template<class Handler>
     void GetPlayers(Token token, Handler&& handler) {
-        net::dispatch(
-            tokens_strand_,
-            [this, token = std::forward<Token>(token), handler = std::forward<Handler>(handler)]()mutable{
-                auto it = tokens_.find(*token);
-
-                if (it != tokens_.end()) {
-                    PlayerId id = it->second;
-                    GetSession(id, std::forward<Handler>(handler));
+        FindSession(token,
+            [handler = std::forward<Handler>(handler)]
+            (std::optional<GameSession*> session, PlayerId id, Result res)mutable{
+                if (res == Result::ok) {
+                    GameSession& sess = **session;
+                    sess.GetPlayers(std::forward<Handler>(handler));
                 } else {
-                    handler(std::nullopt, Result::no_token);
+                    handler(std::nullopt, res);
                 }
             }
         );
     }
+
+    template<class Handler>
+    void MovePlayer(Token token, Direction dir, Handler&& handler) {
+        FindSession(std::move(token),
+            [dir, handler = std::forward<Handler>(handler)]
+            (std::optional<GameSession*> session, PlayerId id, Result res)mutable{
+                if (res == Result::ok) {
+                    GameSession& sess = **session;
+                    sess.MovePlayer(id, dir, handler);
+                } else {
+                    handler(res);
+                }
+            }
+        );
+    }
+
+
 private:
     template<class Handler>
-    void GetSession(PlayerId id, Handler&& handler) {
+    void FindToken(Token token, Handler&& handler) {
         net::dispatch(
-            sessions_strand_,
-            [this, id, handler = std::forward<Handler>(handler)]()mutable{
-                auto it = players_for_sessions_.find(id);
-                if (it != players_for_sessions_.end()) {
-                    it->second->GetPlayers(std::forward<Handler>(handler));
+            tokens_strand_,
+            [this, token = std::move(token), handler = std::forward<Handler>(handler)]()mutable{
+                auto it = tokens_.find(*token);
+                if (it != tokens_.end()) {
+                    handler(it->second);
                 } else {
-                    handler(std::nullopt, Result::no_session);
+                    handler(std::nullopt);
+                }
+            }
+        );
+    }
+
+    template<class Handler>
+    void FindSession(Token token, Handler&& handler) {
+        FindToken(std::move(token),
+            [this, handler = std::forward<Handler>(handler)](std::optional<PlayerId> id)mutable{
+                if (id.has_value()) {
+                    net::dispatch(sessions_strand_,
+                        [this, id, handler = std::forward<Handler>(handler)]()mutable{
+                            auto it = players_for_sessions_.find(*id);
+                            if (it != players_for_sessions_.end()) {
+                                handler(it->second, *id, Result::ok);
+                            } else {
+                                handler(std::nullopt, 0, Result::no_session);
+                            }
+                        }
+                    );
+                } else {
+                    handler(std::nullopt, 0, Result::no_token);
                 }
             }
         );
