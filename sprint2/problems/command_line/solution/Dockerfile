@@ -21,7 +21,9 @@ RUN cd /app/build && \
 	cmake -DCMAKE_BUILD_TYPE=Release .. && \
 	cmake --build . 
 
+RUN cd /app && ls
 RUN cd /app/build && ls
+RUN cd /app/build/bin && ls
 
 FROM ubuntu:22.04 as run
 
