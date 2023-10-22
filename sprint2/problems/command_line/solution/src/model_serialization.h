@@ -6,6 +6,16 @@
 namespace model {
 namespace json = boost::json;
 
+void tag_invoke (json::value_from_tag, json::value& jv, const Road& road);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Building& building);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Office& office);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const Map& map);
+
+void tag_invoke (json::value_from_tag, json::value& jv, const MapInfo& map);
+
 Road tag_invoke(json::value_to_tag<Road>&, const json::value& road);
 
 Building tag_invoke(json::value_to_tag<Building>&, const json::value building);

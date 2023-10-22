@@ -5,7 +5,7 @@
 #include <functional>
 #include <chrono>
 
-#include "my_debug.h"
+//#include "my_debug.h"
 
 namespace ticker {
 

@@ -55,9 +55,14 @@ const std::string unknown_token_mess = "Player token has not been found"s;
 
 const std::string token_prefix = "Bearer "s;
 
-const std::string pos_key   = "pos"s;
-const std::string speed_key = "speed"s;
-const std::string dir_key   = "dir"s;
+const std::string pos_key     = "pos"s;
+const std::string speed_key   = "speed"s;
+const std::string dir_key     = "dir"s;
+const std::string players_key = "players"s;
 
+const std::string user_name_key  = "userName"s;
+const std::string map_id_key     = "mapId"s;
+const std::string time_delta_key = "timeDelta"s;
+const std::string move_key = "move"s;
 
 } // namespace json_keys

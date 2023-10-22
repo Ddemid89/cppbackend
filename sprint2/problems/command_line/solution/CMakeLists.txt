@@ -22,20 +22,29 @@ add_executable(game_server
         src/json_loader.cpp
         src/request_handler.cpp
         src/request_handler.h
+        src/request_handler.tpp
         src/json_keys.h
         src/logging_request_handler.h
         src/logger.h
         src/logger.cpp
         src/game_manager.h
+        src/game_manager.tpp
+        src/game_manager.cpp
         src/api_handler.h
+        src/api_handler.cpp
+        src/api_handler.tpp
         src/body_types.h
         src/body_types.cpp
         src/resp_maker.h
+        src/resp_maker.tpp
+        src/resp_maker.cpp
         src/model_serialization.h
         src/model_serialization.cpp
         src/move_manager.h
+        src/move_manager.cpp
         src/my_debug.h
         src/ticker.h
+        src/http_strs.h
 )
 
 target_include_directories(game_server PRIVATE CONAN_PKG::boost)

@@ -59,7 +59,6 @@ public:
 
         detail::DurationMeasure dur_measure;
 
-        //decltype(req)???
         request_handler_(std::forward<ReqType>(req), [send = std::forward<Send>(send), &dur_measure](auto&& response){
             json_logger::JsonLogger::GetInstance().LogResponse(
                         dur_measure.GetDuration(),
