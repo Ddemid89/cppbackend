@@ -89,6 +89,8 @@ public:
     State GetRandomPlace() const;
 
 private:
+    void AddRoad (const model::Road& road, AreaMap& area_map);
+
     void AddArea (model::Point point, AreaMap& area_map);
 
     void AddNeigbours(Area& area, AreaMap& area_map);

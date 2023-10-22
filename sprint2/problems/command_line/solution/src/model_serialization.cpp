@@ -35,13 +35,13 @@ Road tag_invoke(json::value_to_tag<Road>&, const json::value& road) {
             Point{x0, y0},
             detail::GetInt(road, x1_key)
         };
-    } else {
-        return model::Road {
-            Road::VERTICAL,
-            Point{x0, y0},
-            detail::GetInt(road, y1_key)
-        };
     }
+    return model::Road {
+        Road::VERTICAL,
+        Point{x0, y0},
+        detail::GetInt(road, y1_key)
+    };
+
 }
 
 Building tag_invoke(json::value_to_tag<Building>&, const json::value building) {
@@ -150,9 +150,6 @@ void tag_invoke (json::value_from_tag, json::value& jv, const Map& map) {
         {buildings_key, map.GetBuildings()},
         {offices_key, map.GetOffices()}
     };
-    //if (!map.IsDefaultSpeed()) {
-    //    jv.as_object().emplace(map_dog_speed_key, map.GetDogSpeed());
-    //}
 }
 
 void tag_invoke (json::value_from_tag, json::value& jv, const MapInfo& map) {

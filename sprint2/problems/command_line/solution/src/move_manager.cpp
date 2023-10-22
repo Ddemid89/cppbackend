@@ -1,13 +1,5 @@
 #include "move_manager.h"
 
-//#include <deque>
-//#include <optional>
-//#include <unordered_map>
-//#include <random>
-//#include <cassert>
-
-//#include "model.h"
-
 namespace move_manager {
 
 size_t PointHasher::operator()(const model::Point& point) const {
@@ -20,47 +12,56 @@ size_t PointHasher::operator()(const model::Point& point) const {
 
 std::string GetStringDirection(Direction dir) {
     using namespace std::literals;
-    if (dir == Direction::NORTH) {
+    switch (dir) {
+    case Direction::NORTH:
         return "U"s;
-    } else if (dir == Direction::SOUTH) {
-        return "D"s;
-    } else if (dir == Direction::EAST) {
+    case Direction::EAST:
         return "R"s;
-    } else if (dir == Direction::WEST) {
+    case Direction::SOUTH:
+        return "D"s;
+    case Direction::WEST:
         return "L"s;
-    } else {
+    default:
         throw std::logic_error("Direction not supported");
     }
 }
 
 std::optional<Direction> GetDirectionFromString(std::string_view dir) {
     using namespace std::literals;
-    if (dir == "U"sv) {
-        return Direction::NORTH;
-    } else if (dir == "D"sv) {
-        return Direction::SOUTH;
-    } else if (dir == "L"sv) {
-        return Direction::WEST;
-    } else if (dir == "R"sv) {
-        return Direction::EAST;
-    } else if (dir == ""sv) {
+
+    if (dir.empty()) {
         return Direction::NONE;
-    } else {
+    }
+
+    if (dir.size() != 1) {
         return std::nullopt;
     }
+
+    switch(dir.at(0)) {
+    case 'U':
+        return Direction::NORTH;
+    case 'D':
+        return Direction::SOUTH;
+    case 'L':
+        return Direction::WEST;
+    case 'R':
+        return Direction::EAST;
+    }
+    return std::nullopt;
 }
 
 
 const Area* Area::GetNeighbour(Direction dir) const {
-    if (dir == Direction::NORTH) {
+    switch (dir) {
+    case Direction::NORTH:
         return u_;
-    } else if (dir == Direction::EAST) {
+    case Direction::EAST:
         return r_;
-    } else if (dir == Direction::SOUTH) {
+    case Direction::SOUTH:
         return d_;
-    } else if (dir == Direction::WEST) {
+    case Direction::WEST:
         return l_;
-    } else {
+    default:
         throw std::logic_error("Area: NONE direction neighbour");
     }
 }
@@ -80,18 +81,20 @@ double Area::GetMaxCoor(Direction dir) const {
     if (GetNeighbour(dir)) {
         max_delta = 0.5;
     }
-    if (dir == Direction::NORTH) {
+
+    switch (dir) {
+    case Direction::NORTH:
         return base_.y - max_delta;
-    } else if (dir == Direction::EAST) {
+    case Direction::EAST:
         return base_.x + max_delta;
-    } else if (dir == Direction::SOUTH) {
+    case Direction::SOUTH:
         return base_.y + max_delta;
-    } else {
+    case Direction::WEST:
         return base_.x - max_delta;
+    default:
+        throw std::logic_error("Area: NONE direction borders");
     }
 }
-
-
 
 void State::Move(uint64_t dur) {
     Coords target_position;
@@ -114,26 +117,29 @@ void State::Move(uint64_t dur) {
     }
 }
 
+void Map::AddRoad(const model::Road& road, AreaMap& area_map) {
+    if (road.IsHorizontal()) {
+        int y = road.GetStart().y;
+        int x1 = std::min(road.GetStart().x, road.GetEnd().x);
+        int x2 = std::max(road.GetStart().x, road.GetEnd().x);
+        for (; x1 <= x2; x1++) {
+            AddArea({x1, y}, area_map);
+        }
+    } else {
+        int x = road.GetStart().x;
+        int y1 = std::min(road.GetStart().y, road.GetEnd().y);
+        int y2 = std::max(road.GetStart().y, road.GetEnd().y);
+        for (; y1 <= y2; y1++) {
+            AddArea({x, y1}, area_map);
+        }
+    }
+}
 
 Map::Map(const std::vector<model::Road>& roads) {
     AreaMap areas;
 
     for (const model::Road& road : roads) {
-        if (road.IsHorizontal()) {
-            int y = road.GetStart().y;
-            int x1 = std::min(road.GetStart().x, road.GetEnd().x);
-            int x2 = std::max(road.GetStart().x, road.GetEnd().x);
-            for (; x1 <= x2; x1++) {
-                AddArea({x1, y}, areas);
-            }
-        } else {
-            int x = road.GetStart().x;
-            int y1 = std::min(road.GetStart().y, road.GetEnd().y);
-            int y2 = std::max(road.GetStart().y, road.GetEnd().y);
-            for (; y1 <= y2; y1++) {
-                AddArea({x, y1}, areas);
-            }
-        }
+        AddRoad(road, areas);
     }
 }
 

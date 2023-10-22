@@ -2,6 +2,17 @@
 #include <unordered_map>
 
 namespace body_type {
+namespace detail {
+std::string GetExtention(std::string_view file_name) {
+    size_t last_dot = file_name.find_last_of('.');
+    if (last_dot == file_name.npos || last_dot == file_name.size() - 1) {
+        return "";
+    }
+    return to_lower_case(file_name.substr(last_dot + 1));
+}
+} // namespace detail
+
+
 std::string to_lower_case(std::string_view str) {
     static int diff = 'A' - 'a';
     std::string result;
@@ -36,12 +47,8 @@ std::string_view GetTypeByExtention(std::string_view file) {
                                                                  {"svg"s,  &svg},
                                                                  {"svgz"s, &svg},
                                                                  {"mp3"s,  &mp3}};
-    size_t last_dot = file.find_last_of('.');
-    if (last_dot == file.npos || last_dot == file.size() - 1) {
-        return unknown;
-    }
-    std::string extention = to_lower_case(file.substr(last_dot + 1));
 
+    std::string extention = detail::GetExtention(file);
     auto it = types.find(extention);
 
     if (it == types.end()) {

@@ -7,13 +7,12 @@
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
-//#include <iostream>
 
 namespace url_decode {
 
 std::string DecodeURL(std::string_view url);
 
-} // namespace url_decode ------------------------------------------------------------------------------------
+} // namespace url_decode
 
 namespace http_server {
 
@@ -86,7 +85,7 @@ private:
         // Захватываем умный указатель на текущий объект Session в лямбде,
         // чтобы продлить время жизни сессии до вызова лямбды.
         // Используется generic-лямбда функция, способная принять response произвольного типа
-        request.target(url_decode::DecodeURL(request.target()));//----------------------------------------------------------
+        request.target(url_decode::DecodeURL(request.target()));
         request.insert(http::field::sender, remote_endpoint_.address().to_string());
         request_handler_(std::move(request), [self = this->shared_from_this()](auto&& response) {
             self->Write(std::move(response));

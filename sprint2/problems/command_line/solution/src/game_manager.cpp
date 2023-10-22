@@ -1,34 +1,6 @@
 #include "game_manager.h"
 
-// Когда будет извесно точное количество игроков
-// в сессии, можно удалить
-//#include <limits> // <- это
-
-//#include <deque>
-//#include <unordered_map>
-//#include <optional>
-//#include <vector>
-//#include <random>
-//#include <iomanip>
-//#include <sstream>
-
-//#include "model.h"
-//#include "move_manager.h"
-//#include "tagged.h"
-//#include "ticker.h"
-
-//#include <boost/asio/io_context.hpp>
-//#include <boost/asio/strand.hpp>
-//#include <boost/beast.hpp>
-
-
 namespace game_manager {
-
-//namespace net = boost::asio;
-//using Token = util::Tagged<std::string, detail::TokenTag>;
-//using PlayerId = uint32_t;
-//namespace beast = boost::beast;
-//using TokenStr = std::string;
 
 GameSession::GameSession (net::io_context& ioc, const model::Map& map,
              const move_manager::Map& move_map, bool random_spawn, uint64_t tick_duration)
@@ -61,17 +33,20 @@ void GameSession::Tick(uint64_t duration) {
 }
 
 move_manager::Speed GameSession::GetSpeed(move_manager::Direction dir) {
-    if (dir == move_manager::Direction::NORTH) {
+    using namespace move_manager;
+    switch (dir) {
+    case Direction::NORTH:
         return {0., -map_.GetDogSpeed()};
-    } else if (dir == move_manager::Direction::SOUTH) {
+    case Direction::SOUTH:
         return {0., map_.GetDogSpeed()};
-    } else if (dir == move_manager::Direction::EAST) {
+    case Direction::EAST:
         return {map_.GetDogSpeed(), 0.};
-    } else if (dir == move_manager::Direction::WEST) {
+    case Direction::WEST:
         return {-map_.GetDogSpeed(), 0.};
-    } else {
+    case Direction::NONE:
         return {0., 0.};
     }
+    throw std::logic_error("GameSession::GetSpeed: not implemented");
 }
 
 GameManager::GameManager(model::Game& game, net::io_context& ioc, bool random_spawn, uint64_t tick_duration)

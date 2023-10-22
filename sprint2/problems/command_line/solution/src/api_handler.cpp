@@ -23,7 +23,8 @@ namespace json = boost::json;
 
 
 ApiHandler::ResponseInfo ApiHandler::ApiResponse(RequestInfo &req) {
-    if (FindAndCutTarget(req, "/v1"sv)) {
+    std::string_view path_part = FindAndCutTarget(req);
+    if (path_part == http_strs::v1) {
         return V1Response(req);
     } else {
         return BadResponseInfo();
@@ -31,7 +32,8 @@ ApiHandler::ResponseInfo ApiHandler::ApiResponse(RequestInfo &req) {
 }
 
 ApiHandler::ResponseInfo ApiHandler::V1Response(RequestInfo& req) {
-    if (FindAndCutTarget(req, "/maps"sv)) {
+    std::string_view path_part = FindAndCutTarget(req);
+    if (path_part == http_strs::maps) {
         return MapsResponse(req);
     } else {
         return BadResponseInfo();
@@ -81,11 +83,18 @@ ApiHandler::ResponseInfo ApiHandler::NotFoundInfo(std::string message, bool no_c
     return res;
 }
 
-bool ApiHandler::FindAndCutTarget(RequestInfo& req, std::string_view part) {
-    if (req.target.starts_with(part)) {
-        req.target = req.target.substr(part.size());
-        return true;
+std::string_view ApiHandler::FindAndCutTarget(RequestInfo& req) {
+    std::string_view res;
+    size_t pos = req.target.find_first_of('/', 1);
+
+    if (pos != req.target.npos) {
+        res = req.target.substr(0, pos);
+        req.target = req.target.substr(res.size());
+        return res;
     }
-    return false;
+    res = req.target;
+    req.target = "";
+    return res;
 }
 } // namespace api_handler
+
