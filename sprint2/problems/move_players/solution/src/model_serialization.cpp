@@ -75,7 +75,6 @@ Office tag_invoke(json::value_to_tag<Office>&, const json::value office) {
 
 Map tag_invoke(json::value_to_tag<Map>&, const json::value map) {
     double speed = 0;
-
     if (map.as_object().contains(map_dog_speed_key)) {
         speed = map.as_object().at(map_dog_speed_key).as_double();
     }
@@ -143,7 +142,7 @@ void tag_invoke (json::value_from_tag, json::value& jv, const Office& office) {
     };
 }
 
-void tag_invoke (json::value_from_tag, json::value& jv, const Map& map) {
+void tag_invoke (json::value_from_tag, json::value& jv, const Map& map) { 
     jv = {
         {id_key, *map.GetId()},
         {name_key, map.GetName()},
@@ -151,6 +150,9 @@ void tag_invoke (json::value_from_tag, json::value& jv, const Map& map) {
         {buildings_key, map.GetBuildings()},
         {offices_key, map.GetOffices()}
     };
+    //if (!map.IsDefaultSpeed()) {
+    //    jv.as_object().emplace(map_dog_speed_key, map.GetDogSpeed());
+    //}
 }
 
 void tag_invoke (json::value_from_tag, json::value& jv, const MapInfo& map) {

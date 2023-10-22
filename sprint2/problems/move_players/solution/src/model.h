@@ -15,6 +15,9 @@ using Coord = Dimension;
 
 struct Point {
     Coord x, y;
+    bool operator==(Point other) const {
+        return x == other.x && y == other.y;
+    }
 };
 
 struct Size {
@@ -126,7 +129,8 @@ public:
     Map(Id id, std::string name, double dog_speed = 0) noexcept
         : id_(std::move(id))
         , name_(std::move(name))
-        , dog_speed_(dog_speed){
+        , dog_speed_(dog_speed)
+        , defaultSpeed(dog_speed == 0){
     }
 
     const Id& GetId() const noexcept {
@@ -163,11 +167,14 @@ public:
         return dog_speed_;
     }
 
-    bool HasDogSpeed() const {
-        return dog_speed_ != 0;
+    bool IsDefaultSpeed() const {
+        return defaultSpeed;
     }
 
     void SetDogSpeed(double value) {
+        if (!defaultSpeed) {
+            throw std::logic_error("Not default speed");
+        }
         dog_speed_ = value;
     }
 
@@ -182,6 +189,7 @@ private:
     OfficeIdToIndex warehouse_id_to_index_;
     Offices offices_;
     double dog_speed_;
+    bool defaultSpeed;
 };
 
 class MapInfo {

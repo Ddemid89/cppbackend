@@ -145,8 +145,8 @@
 	"kind" : "cmakeFiles",
 	"paths" : 
 	{
-		"build" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution/build-debug",
-		"source" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution"
+		"build" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution/build-debug",
+		"source" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution"
 	},
 	"version" : 
 	{

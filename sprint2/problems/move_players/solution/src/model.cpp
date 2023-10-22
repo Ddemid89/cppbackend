@@ -27,7 +27,7 @@ void Game::AddMap(Map map) {
         throw std::invalid_argument("Map with id "s + *map.GetId() + " already exists"s);
     } else {
         try {
-            if (!map.HasDogSpeed()) {
+            if (map.IsDefaultSpeed()) {
                 map.SetDogSpeed(default_speed_);
             }
 

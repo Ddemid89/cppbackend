@@ -8,7 +8,7 @@ RUN apt update && \
 	pip3 install conan==1.*
 
 COPY conanfile.txt /app/
-RUN echo "gf4" && mkdir /app/build && \
+RUN mkdir /app/build && \
 	cd /app/build && \
 	conan install .. --build=missing -s build_type=Release -s compiler.libcxx=libstdc++11
 

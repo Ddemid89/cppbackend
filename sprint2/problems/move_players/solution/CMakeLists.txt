@@ -41,6 +41,8 @@ add_executable(game_server
         src/resp_maker.h
         src/model_serialization.h
         src/model_serialization.cpp
+        src/move_manager.h
+        src/my_debug.h
 )
 
 target_include_directories(game_server PRIVATE CONAN_PKG::boost)

@@ -87,7 +87,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution/build-debug"
+			"value" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution/build-debug"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -451,7 +451,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution/build-debug/CMakeFiles/pkgRedirects"
+			"value" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution/build-debug/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -523,7 +523,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution"
+			"value" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -1143,7 +1143,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution/build-debug"
+			"value" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution/build-debug"
 		},
 		{
 			"name" : "game_server_IS_TOP_LEVEL",
@@ -1167,7 +1167,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/aleksey/cppbackend/sprint2/problems/move_players/solution"
+			"value" : "/home/aleksey/cppbackend/sprint2/problems/time_control/solution"
 		}
 	],
 	"kind" : "cache",
