@@ -50,15 +50,16 @@ struct MoveResult{
 class Area{
 public:
     Area(model::Point base) : base_(base) {}
-    void SetUp(Area* area) {u_ = area;}
-    void SetRight(Area* area)  {r_ = area;}
-    void SetDown(Area* area) {d_ = area;}
-    void SetLeft(Area* area)  {l_ = area;}
+    void SetUp(Area* area) { u_ = area; }
+    void SetRight(Area* area) { r_ = area; }
+    void SetDown(Area* area) { d_ = area; }
+    void SetLeft(Area* area) { l_ = area; }
 
-    model::Point GetBase() const {return base_;}
+    model::Point GetBase() const { return base_; }
     const Area* GetNeighbour(Direction dir) const;
-    bool IsIntersects(Coords coords) const;
+    bool IsIntersects(Coords coords, Direction dir, bool borders = true, bool other_axis = false) const;
     double GetMaxCoor(Direction dir) const;
+    Coords Place(Coords coor) const;
 
 private:
     model::Point base_;

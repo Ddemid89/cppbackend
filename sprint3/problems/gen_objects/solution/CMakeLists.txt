@@ -46,8 +46,18 @@ add_executable(game_server
 
 add_executable(catch_tests
         tests/loot_generator_tests.cpp
+        tests/model_tests.cpp
         src/loot_generator.cpp
-        src/loot_generator.h)
+        src/loot_generator.h
+        src/game_manager.h
+        src/game_manager.cpp
+        src/model.h
+        src/model.cpp
+        src/move_manager.h
+        src/move_manager.cpp
+        src/ticker.h
+        src/tagged.h
+)
 
 target_include_directories(game_server PRIVATE CONAN_PKG::boost)
 target_link_libraries(game_server PRIVATE Threads::Threads CONAN_PKG::boost)

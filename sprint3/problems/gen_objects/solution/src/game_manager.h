@@ -113,12 +113,12 @@ private:
     LootObjectsContainer loot_objects_;
     double loot_interval_;
     double loot_prob_;
-    loot_gen::LootGenerator loot_generator_{static_cast<int>(loot_interval_ * 1000) * 1ms, loot_prob_,
+    loot_gen::LootGenerator loot_generator_{static_cast<int>(loot_interval_ * 1000) * 1ms, loot_prob_/*,
                 [this]()mutable{
-                  std::uniform_real_distribution<>dis (0, 1.0);
+                  std::uniform_real_distribution<>dis (0.0, 1.0);
                   return dis(generator);
                 }
-    };
+    */};
 };
 
 //-----------------------------------GameManager------------------------------------------

@@ -66,14 +66,22 @@ const Area* Area::GetNeighbour(Direction dir) const {
     }
 }
 
-bool Area::IsIntersects(Coords coords) const {
-    double left_border   = base_.x - 0.4 - 0.1 * (l_ != nullptr);
-    double right_border  = base_.x + 0.4 + 0.1 * (r_ != nullptr);
-    double top_border    = base_.y - 0.4 - 0.1 * (u_ != nullptr);
-    double bottom_border = base_.y + 0.4 + 0.1 * (d_ != nullptr);
+bool Area::IsIntersects(Coords coords, Direction dir, bool borders, bool other_axis) const {
+    double left_border   = base_.x - 0.4 - 0.1 * (l_ != nullptr || !borders);
+    double right_border  = base_.x + 0.4 + 0.1 * (r_ != nullptr || !borders);
+    double top_border    = base_.y - 0.4 - 0.1 * (u_ != nullptr || !borders);
+    double bottom_border = base_.y + 0.4 + 0.1 * (d_ != nullptr || !borders);
 
-    return left_border <= coords.x && coords.x <= right_border
-        && top_border  <= coords.y && coords.y <= bottom_border;
+    bool horizontal = (dir == Direction::EAST || dir == Direction::WEST) != other_axis;
+
+    if (dir == Direction::NONE) {
+        return left_border <= coords.x && coords.x <= right_border
+            && top_border  <= coords.y && coords.y <= bottom_border;
+    } else if (horizontal) {
+        return left_border <= coords.x && coords.x <= right_border;
+    } else {
+        return top_border  <= coords.y && coords.y <= bottom_border;
+    }
 }
 
 double Area::GetMaxCoor(Direction dir) const {
@@ -96,16 +104,22 @@ double Area::GetMaxCoor(Direction dir) const {
     }
 }
 
+Coords Area::Place(Coords coor) const {
+    coor.x = std::clamp(coor.x, base_.x - 0.4 - 0.1 * (l_ != nullptr), base_.x + 0.4 + 0.1 * (r_ != nullptr));
+    coor.y = std::clamp(coor.y, base_.y - 0.4 - 0.1 * (u_ != nullptr), base_.y + 0.4 + 0.1 * (d_ != nullptr));
+    return coor;
+}
+
 void State::Move(uint64_t dur) {
     Coords target_position;
     target_position.x = position.coor.x + (speed.x_axis * dur) / 1000;
     target_position.y = position.coor.y + (speed.y_axis * dur) / 1000;
 
-    while (!position.area->IsIntersects(target_position) && position.area->GetNeighbour(dir)) {
+    while (!position.area->IsIntersects(target_position, Direction::NONE, false) && position.area->GetNeighbour(dir)) {
         position.area = position.area->GetNeighbour(dir);
     }
 
-    if (!position.area->IsIntersects(target_position)) {
+    if (!position.area->IsIntersects(target_position, dir)) {
         speed = {0.0, 0.0};
         if (dir == Direction::NORTH || dir == Direction::SOUTH) {
             position.coor.y = position.area->GetMaxCoor(dir);
@@ -113,7 +127,11 @@ void State::Move(uint64_t dur) {
             position.coor.x = position.area->GetMaxCoor(dir);
         }
     } else {
+        if (!position.area->IsIntersects(target_position, dir, true, true)) {
+            target_position = position.area->Place(target_position);
+        }
         position.coor = target_position;
+
     }
 }
 
