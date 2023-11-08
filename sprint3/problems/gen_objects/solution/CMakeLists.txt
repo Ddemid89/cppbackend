@@ -62,3 +62,4 @@ add_executable(catch_tests
 target_include_directories(game_server PRIVATE CONAN_PKG::boost)
 target_link_libraries(game_server PRIVATE Threads::Threads CONAN_PKG::boost)
 target_link_libraries(catch_tests PRIVATE CONAN_PKG::catch2)
+target_link_libraries(catch_tests PRIVATE Threads::Threads CONAN_PKG::boost)
