@@ -59,10 +59,14 @@ add_executable(game_server_tests
         src/tagged.h
 )
 
-message("catch2_path:" ${CONAN_CATCH2_ROOT_RELEASE})
-
 include(CTest)
-include(${CONAN_CATCH2_ROOT_RELEASE}/lib/cmake/Catch2/Catch.cmake)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        include(${CONAN_BUILD_DIRS_CATCH2_DEBUG}/Catch.cmake) 
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        include(${CONAN_BUILD_DIRS_CATCH2_RELEASE}/Catch.cmake)
+endif()
+
 catch_discover_tests(game_server_tests)
 
 target_include_directories(common_sources PUBLIC CONAN_PKG::boost)
