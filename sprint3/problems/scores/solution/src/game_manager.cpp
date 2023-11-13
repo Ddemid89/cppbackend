@@ -46,10 +46,7 @@ int GameSession::GetRandomLootObject() {
     return dis(generator);
 }
 
-void GameSession::HandleCollisions(uint64_t duration) {
-    using namespace collision_detector;
-    GameProvider provider;
-
+void GameSession::AddPlayersToProvider(GameProvider& provider, uint64_t duration) {
     for (const Player& player : players_) {
         const move_manager::State& state = player.state;
         geom::Point2D start{state.position.coor.x, state.position.coor.y};
@@ -58,23 +55,27 @@ void GameSession::HandleCollisions(uint64_t duration) {
         geom::Point2D finish {start.x + dx, start.y + dy};
         provider.AddGatherer({start, finish, model::DOG_WIDTH / 2});
     }
+}
 
+void GameSession::AddItemsToProvider(GameProvider& provider) {
     for (const LootObject& loot_object : loot_objects_) {
         const move_manager::PositionState& state = loot_object.position;
         geom::Point2D pos{state.coor.x, state.coor.y};
         provider.AddItem({pos, model::ITEM_WIDTH / 2, false});
     }
+}
 
+void GameSession::AddOfficiesToProvider(GameProvider& provider) {
     for (const model::Office& office : map_.GetOffices()) {
         double x = office.GetPosition().x;
         double y = office.GetPosition().y;
         geom::Point2D pos{x, y};
         provider.AddItem({pos, model::OFFICE_WIDTH / 2, true});
     }
+}
 
-    auto gather_events = FindGatherEvents(provider);
-
-    for (const auto& event : gather_events) {
+void GameSession::HandleGatherEvents(std::vector<collision_detector::GatheringEvent>& events) {
+    for (const auto& event : events) {
         Player& player = players_.at(event.gatherer_id);
 
         if (player.items_in_bag.size() < map_.GetBagCapacity()) {
@@ -102,6 +103,19 @@ void GameSession::HandleCollisions(uint64_t duration) {
         }
     }
     loot_objects_.resize(new_size);
+}
+
+void GameSession::HandleCollisions(uint64_t duration) {
+    using namespace collision_detector;
+    GameProvider provider;
+
+    AddPlayersToProvider(provider, duration);
+    AddItemsToProvider(provider);
+    AddOfficiesToProvider(provider);
+
+    auto gather_events = FindGatherEvents(provider);
+
+    HandleGatherEvents(gather_events);
 }
 
 void GameSession::GenerateLoot(uint64_t dur) {

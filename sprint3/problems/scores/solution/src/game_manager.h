@@ -118,6 +118,14 @@ public:
 private:
     int GetRandomLootObject();
 
+    void AddPlayersToProvider(GameProvider& provider, uint64_t duration);
+
+    void AddItemsToProvider(GameProvider& provider);
+
+    void AddOfficiesToProvider(GameProvider& provider);
+
+    void HandleGatherEvents(std::vector<collision_detector::GatheringEvent>& events);
+
     void HandleCollisions(uint64_t duration);
 
     move_manager::Speed GetSpeed(move_manager::Direction dir);
