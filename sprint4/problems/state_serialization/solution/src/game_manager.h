@@ -8,6 +8,7 @@
 
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 #include <vector>
 #include <random>
@@ -104,18 +105,54 @@ struct GameSessionRepr {
     std::string map_name;
     std::vector<Player> players;
     std::vector<LootObject> loot_objects;
-}; 
+};
 
 struct PlayerRepr {
     std::string token;
     size_t id;
-    size_t session_index;
 };
 
 struct GameRepr {
     size_t players_number;
     std::vector<GameSessionRepr> sessions;
     std::vector<PlayerRepr> players;
+};
+
+class GameSession;
+
+template <class Callback>
+class GameReprWrapper {
+public:
+    GameReprWrapper (Callback&& callback)
+            : callback_(std::forward<Callback>(callback)){}
+
+    void AddSession(size_t index, GameSessionRepr&& session) {
+        repr_.sessions.at(index) = std::move(session);
+        filled_sessions_++;
+        if (filled_sessions_ == sessions_number_) {
+            callback_(std::move(repr_));
+        }
+    }
+
+    void SetSessionsNumber(size_t number) {
+        if (number == 0) {
+            callback_(std::move(repr_));
+        }
+        sessions_number_ = number;
+        repr_.sessions.resize(number);
+    }
+
+    void AddPlayers(std::vector<PlayerRepr>&& players, size_t number) {
+        repr_.players_number = number;
+        repr_.players = std::move(players);
+    }
+
+private:
+    std::atomic<size_t> filled_sessions_ = 0;
+    std::atomic<size_t> sessions_number_;
+
+    GameRepr repr_;
+    Callback callback_;
 };
 
 class GameSession{
@@ -147,6 +184,21 @@ public:
         result.loot_objects = std::vector<LootObject>{loot_objects_.begin(), loot_objects_.end()};
 
         return result;
+    }
+
+    template <class Callback>
+    void GetRepresentationAsync(Callback&& callback) {
+        net::dispatch(strand_,
+            [callback = std::forward<Callback>(callback), this](){
+                GameSessionRepr result;
+
+                result.map_name = *map_.GetId();
+                result.players = std::vector<Player>{players_.begin(), players_.end()};
+                result.loot_objects = std::vector<LootObject>{loot_objects_.begin(), loot_objects_.end()};
+
+                callback(std::move(result));
+            }
+        );
     }
 
     void Restore(GameSessionRepr&& repr) {
@@ -274,34 +326,98 @@ public:
             sessions_ptr_to_index_[&session] = sessions_ptr_to_index_.size();
         }
 
-        for (const auto [token, id] : tokens_) {
+        for (const auto& [token, id] : tokens_) {
             GameSession* sess_ptr = players_for_sessions_.at(id);
             size_t session_index = sessions_ptr_to_index_.at(sess_ptr);
-            result.players.emplace_back(*token, id, session_index);
+            result.players.emplace_back(*token, id);
         }
 
         return result;
     }
 
+    template <class Callback>
+    void GetRepresentationAsync(Callback&& callback) {
+        using ReprType = GameReprWrapper<Callback>;
+
+        std::shared_ptr<ReprType> repr = std::make_shared<ReprType>(
+                    std::forward<Callback>(callback)
+        );
+
+        AddPlayersForRepr(repr);
+    }
+
+    template<class ReprType>
+    void AddPlayersForRepr(ReprType repr) {
+        net::dispatch(tokens_strand_,
+            [repr, this](){
+                std::vector<PlayerRepr> players(tokens_.size());
+
+                for (const auto& [token, id] : tokens_) {
+                    players.emplace_back(*token, id);
+                }
+
+                repr->AddPlayers(std::move(players), player_counter_);
+
+                AddSessionsForRepr(repr);
+            }
+        );
+    }
+
+    template<class ReprType>
+    void AddSessionsForRepr(ReprType repr) {
+        net::dispatch(sessions_strand_,
+            [repr, this](){
+                int i = 0;
+                repr->SetSessionsNumber(sessions_.size());
+
+                for (GameSession& session : sessions_) {
+                    session.GetRepresentationAsync(
+                        [repr, i](GameSessionRepr&& sess){
+                            repr->AddSession(i, std::move(sess));
+                        }
+                    );
+
+                    i++;
+                }
+            }
+        );
+    }
+
     void Restore(GameRepr&& repr) {
         player_counter_ = repr.players_number;
+
+        std::unordered_set<PlayerId> existing_players;
+
+        for (PlayerRepr& player : repr.players) {
+            Token token{player.token};
+            tokens_[token] = player.id;
+            existing_players.insert(player.id);
+        }
 
         for (GameSessionRepr& sess : repr.sessions) {
             model::Map::Id map_id{sess.map_name};
             const model::Map& map = *game_.FindMap(map_id);
             const move_manager::Map& move_map = *maps_index_.at(map_id);
             sessions_.emplace_back(ioc_, map, move_map, game_.GetLootConfig(), random_spawn_);
+
+            std::vector<Player> valid_players;
+            valid_players.reserve(sess.players.size());
+
+            for (Player& player : sess.players) {
+                size_t id = player.id;
+                if (existing_players.contains(id)) {
+                    valid_players.push_back(std::move(player));
+                    players_for_sessions_[id] = &sessions_.back();
+                }
+            }
+
+            std::swap(valid_players, sess.players);
+
             sessions_.back().Restore(std::move(sess));
             sessions_for_maps_[map_id].push_back(&sessions_.back());
         }
 
-        for (PlayerRepr& player : repr.players) {
-            Token token{player.token};
-            tokens_[token] = player.id;
-            players_for_sessions_[player.id] = &sessions_.at(player.session_index);
-        }
     }
-
 
     void Subscribe(std::shared_ptr<TickListner> listner) {
         listners_.push_back(std::move(listner));
@@ -338,7 +454,6 @@ private:
 
     std::unordered_map<model::Map::Id, move_manager::Map*, MapHasher> maps_index_;
     std::vector<move_manager::Map> maps_;
-
 
     std::random_device random_device_;
     std::mt19937_64 generator1_{[this] {

@@ -68,7 +68,6 @@ void serialize(Archive& ar, Player& player, [[maybe_unused]] const unsigned vers
 template <typename Archive>
 void serialize(Archive& ar, PlayerRepr& player, [[maybe_unused]] const unsigned version) {
     ar& player.id;
-    ar& player.session_index;
     ar& player.token;
 }
 
@@ -99,29 +98,27 @@ public:
         last_save_ += duration;
         if (last_save_ > period_) {
             last_save_ = 0;
-            Save();
+            SaveAsync();
         }
     }
 
+    void SaveAsync() {
+        game_.GetRepresentationAsync([this](game_manager::GameRepr&& repr) {
+            SaveRepr(std::move(repr));
+        });
+    }
+
     void Save() {
-//        game_.GetRepresentation([this](game_manager::GameRepr&& repr){
-//            std::filesystem::path file(file_);
-//            std::filesystem::path tmp = file.parent_path() / "tmp";
+        SaveRepr(game_.GetRepresentation());
+    }
 
-//            std::ofstream out(tmp);
-//            boost::archive::text_oarchive archive(out);
-//            archive << game_.GetRepresentation();
-
-//            std::filesystem::rename(tmp, file);
-//        });
-
-
+    void SaveRepr(game_manager::GameRepr&& repr) {
         std::filesystem::path file(file_);
         std::filesystem::path tmp = file.parent_path() / "tmp";
 
         std::ofstream out(tmp);
         boost::archive::text_oarchive archive(out);
-        archive << game_.GetRepresentation();
+        archive << repr;
 
         std::filesystem::rename(tmp, file);
     }
