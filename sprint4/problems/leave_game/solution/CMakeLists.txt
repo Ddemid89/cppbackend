@@ -15,6 +15,7 @@ add_library(common_sources STATIC
         src/move_manager.cpp
         src/collision_detector.cpp
         src/game_serialization.cpp
+        src/model.cpp
 )
 
 add_executable(game_server
@@ -23,12 +24,10 @@ add_executable(game_server
         src/http_server.h
         src/sdk.h
         src/model.h
-        src/model.cpp
         src/tagged.h
         src/boost_json.cpp
         src/json_loader.h
         src/json_loader.cpp
-        src/request_handler.cpp
         src/request_handler.h
         src/json_keys.h
         src/logging_request_handler.h
@@ -63,7 +62,6 @@ add_executable(game_server_tests
         src/loot_generator.h
         src/game_manager.h
         src/model.h
-        src/model.cpp
         src/move_manager.h
         src/collision_detector.h        
         src/ticker.h

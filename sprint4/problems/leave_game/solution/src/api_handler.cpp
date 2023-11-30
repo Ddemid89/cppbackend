@@ -84,16 +84,29 @@ bool ApiHandler::CheckAuth() {
     return false;
 }
 
+bool ApiHandler::CheckRequest(Method method, bool auth) {
+    if (!CheckEndPath()) {
+        SendBadRequestResponse("Unsupported request"s);
+        return false;
+    }
+
+    if (auth && !CheckAuth()) {
+        SendNoAuthResponse();
+        return false;
+    }
+
+    if (!CheckMethod(method)) {
+        SendWrongMethodResponse(method);
+        return false;
+    }
+
+    return true;
+}
+
 void ApiHandler::HandleJoinRequest() {
     using namespace resp_maker;
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::post)) {
-        SendWrongMethodResponseAllowedPost(json_keys::invalid_method_message_post);
+    if(!CheckRequest(Method::post, false)) {
         return;
     }
 
@@ -133,18 +146,7 @@ void ApiHandler::HandleJoinRequest() {
 void ApiHandler::HandlePlayersStateRequest() {
     using namespace resp_maker::json_resp;
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::get_head)) {
-        SendWrongMethodResponseAllowedGetHead(json_keys::invalid_method_message_get_head);
-        return;
-    }
-
-    if (!CheckAuth()) {
-        SendNoAuthResponse();
+    if(!CheckRequest(Method::get_head, true)) {
         return;
     }
 
@@ -170,18 +172,7 @@ void ApiHandler::HandlePlayersListRequest() {
 
     game_manager::Token token{""};
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::get_head)) {
-        SendWrongMethodResponseAllowedGetHead(json_keys::invalid_method_message_get_head);
-        return;
-    }
-
-    if (!CheckAuth()) {
-        SendNoAuthResponse();
+    if(!CheckRequest(Method::get_head, true)) {
         return;
     }
 
@@ -209,6 +200,59 @@ void ApiHandler::HandlePlayersListRequest() {
     });
 }
 
+std::optional<uint32_t> ApiHandler::TryGetNumberFromJson(json::value& jv, const std::string& key) {
+    if (!jv.is_object() || !jv.as_object().contains(key)) {
+        SendBadRequestResponse("Failed to parse action", "invalidArgument");
+        return std::nullopt;
+    }
+
+    uint64_t result;
+
+    json::value res = jv.at(key);
+
+    if (res.is_double() || res.is_bool()) {
+        SendBadRequestResponse("Failed to parse action", "invalidArgument");
+        return std::nullopt;
+    }
+
+    if (res.is_string()) {
+        boost::json::string res_boost_str;
+
+        try {
+            res_boost_str = res.as_string();
+        } catch (...) {
+            SendBadRequestResponse("Failed to parse action", "invalidArgument");
+            return std::nullopt;
+        }
+        std::string res_str{res_boost_str.data(), res_boost_str.size()};
+
+        if (res_str.find_first_not_of("0123456789") != res_str.npos || res_str.empty()) {
+            SendBadRequestResponse("Failed to parse action", "invalidArgument");
+            return std::nullopt;
+        }
+        result = std::stoi(res_str);
+    } else if (res.is_int64()) {
+        try {
+            result = res.as_int64();
+        } catch (...) {
+            SendBadRequestResponse("Failed to parse action", "invalidArgument");
+            return std::nullopt;
+        }
+    } else if (res.is_uint64()) {
+        try {
+            result = res.as_uint64();
+        } catch (...) {
+            SendBadRequestResponse("Failed to parse action", "invalidArgument");
+            return std::nullopt;
+        }
+    } else {
+        SendBadRequestResponse("Failed to parse action", "invalidArgument");
+        return std::nullopt;
+    }
+
+    return result;
+}
+
 void ApiHandler::HandleTickRequest() {
     using namespace resp_maker;
 
@@ -217,13 +261,7 @@ void ApiHandler::HandleTickRequest() {
         return;
     }
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::post)) {
-        SendWrongMethodResponseAllowedPost(json_keys::invalid_method_message_post);
+    if(!CheckRequest(Method::post, false)) {
         return;
     }
 
@@ -236,61 +274,18 @@ void ApiHandler::HandleTickRequest() {
         return;
     }
 
-    if (!jv.is_object() || !jv.as_object().contains(json_keys::time_delta_key)) {
+    auto duration = TryGetNumberFromJson(jv, json_keys::time_delta_key);
+
+    if (!duration.has_value()) {
+        return;
+    }
+
+    if (*duration == 0) {
         SendBadRequestResponse("Failed to parse action", "invalidArgument");
         return;
     }
 
-    uint64_t duration;
-
-    boost::json::string dur_boost_str;
-
-    json::value dur = jv.at(json_keys::time_delta_key);
-
-    if (dur.is_double() || dur.if_bool()) {
-        SendBadRequestResponse("Failed to parse action", "invalidArgument");
-        return;
-    }
-
-    if (dur.if_string()) {
-        try {
-            dur_boost_str = jv.at(json_keys::time_delta_key).as_string();
-        } catch (...) {
-            SendBadRequestResponse("Failed to parse action", "invalidArgument");
-            return;
-        }
-        std::string dur_str{dur_boost_str.data(), dur_boost_str.size()};
-
-        if (dur_str.find_first_not_of("0123456789") != dur_str.npos || dur_str.empty()) {
-            SendBadRequestResponse("Failed to parse action", "invalidArgument");
-            return;
-        }
-        duration = std::stoi(dur_str);
-    } else if (dur.is_int64()) {
-        try {
-            duration = dur.as_int64();
-        } catch (...) {
-            SendBadRequestResponse("Failed to parse action", "invalidArgument");
-            return;
-        }
-    } else if (dur.is_uint64()) {
-        try {
-            duration = dur.as_uint64();
-        } catch (...) {
-            SendBadRequestResponse("Failed to parse action", "invalidArgument");
-            return;
-        }
-    } else {
-        SendBadRequestResponse("Failed to parse action", "invalidArgument");
-        return;
-    }
-
-    if (duration == 0) {
-        SendBadRequestResponse("Failed to parse action", "invalidArgument");
-        return;
-    }
-
-    game_.CallTick(duration,
+    game_.CallTick(*duration,
                    [self = this->shared_from_this()](game_manager::Result res){
         self->SendOkResponse("{}");
     }
@@ -306,13 +301,7 @@ void ApiHandler::HandleMoveRequest() {
         return;
     }
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::post)) {
-        SendWrongMethodResponseAllowedPost(json_keys::invalid_method_message_post);
+    if(!CheckRequest(Method::post, true)) {
         return;
     }
 
@@ -353,13 +342,7 @@ void ApiHandler::HandleRecordsRequest() {
         return;
     }
 
-    if (!CheckEndPath()) {
-        SendBadRequestResponse("Unsupported request"s);
-        return;
-    }
-
-    if (!CheckMethod(Method::get_head)) {
-        SendWrongMethodResponseAllowedGetHead(json_keys::invalid_method_message_get_head);
+    if(!CheckRequest(Method::get_head, false)) {
         return;
     }
 
@@ -506,8 +489,6 @@ void ApiHandler::SendBadRequestResponse(std::string message, std::string code, b
     send_(result);
 }
 
-
-
 void ApiHandler::SendNotFoundResponse(const std::string& message, const std::string& key, bool no_cache) {
     ResponseInfo result = MakeResponse(http::status::not_found, no_cache);
 
@@ -564,6 +545,19 @@ void ApiHandler::SendWrongMethodResponseAllowedPost(const std::string& message, 
     send_(result);
 }
 
+void ApiHandler::SendWrongMethodResponse(Method method) {
+    switch(method) {
+    case Method::get_head:
+        SendWrongMethodResponseAllowedGetHead();
+        break;
+    case Method::post:
+        SendWrongMethodResponseAllowedPost();
+        break;
+    case Method::any:
+        throw std::logic_error("Any can`t be wrong method");
+    }
+}
+
 void ApiHandler::SetStartOrMaxNumber(RequestInfo& info, const std::string& key, int val) {
     if (key == json_keys::start_key) {
         info.start = val;
@@ -602,7 +596,6 @@ void ApiHandler::ParseStartAndMaxNumber(RequestInfo& info) {
         info.target = info.target.substr(0, qs_pos);
     }
 }
-
 
 } // namespace api_handler
 

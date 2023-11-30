@@ -72,6 +72,8 @@ private:
 
     bool CheckAuth();
 
+    bool CheckRequest(Method method, bool auth = false);
+
     void HandleJoinRequest();
 
     void HandlePlayersStateRequest();
@@ -120,12 +122,16 @@ private:
     void SendWrongMethodResponseAllowedGetHead (const std::string& message = json_keys::invalid_method_message_get_head,
                                       bool no_cache = true);
 
-    void SendWrongMethodResponseAllowedPost (const std::string& message = json_keys::invalid_method_message_get_head,
+    void SendWrongMethodResponseAllowedPost (const std::string& message = json_keys::invalid_method_message_post,
                                       bool no_cache = true);
+
+    void SendWrongMethodResponse(Method method);
 
     void SetStartOrMaxNumber(RequestInfo& info, const std::string& key, int val);
 
     void ParseStartAndMaxNumber(RequestInfo& info);
+
+    std::optional<uint32_t> TryGetNumberFromJson(json::value& jv, const std::string& key);
 
     game_manager::GameManager& game_;
     RequestInfo req_info_;
