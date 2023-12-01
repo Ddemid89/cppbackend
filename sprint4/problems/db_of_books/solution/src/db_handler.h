@@ -6,6 +6,8 @@
 
 #include "domain.h"
 
+#include <iostream>
+
 namespace db_handler {
 
 using namespace std::literals;
@@ -25,21 +27,27 @@ public:
 
     bool AddBook(domain::Book& book) {
         pqxx::work w(conn_);
-        std::string query = "INSERT INTO books VALUES (DEFAULT, "s;
-        query += w.quote(w.esc(book.title)) + ", "s;
-        query += w.quote(w.esc(book.author)) + ", "s;
-        query += std::to_string(book.year) + ", "s;
 
-        if (book.ISBN != "") {
-            query += w.quote(book.ISBN);
-        } else {
-            query += "NULL"s;
-        }
-
-        query += ");"s;
+        std::cerr << "title: [" << book.title << "], auth: [" << book.author << "], ISBN: [" << book.ISBN << "]" << std::endl;
 
         try {
-            w.exec(query);
+            if (book.ISBN != "") {
+                w.exec_params(
+                    "INSERT INTO books (id, title, author, year, ISBN) VALUES(DEFAULT, $1, $2, $3, $4)"_zv,
+                    w.esc(book.title),
+                    w.esc(book.author),
+                    std::to_string(book.year),
+                    w.esc(book.ISBN)
+                );
+            } else {
+                w.exec_params(
+                    "INSERT INTO books (id, title, author, year) VALUES(DEFAULT, $1, $2, $3)"_zv,
+                    w.esc(book.title),
+                    w.esc(book.author),
+                    std::to_string(book.year)
+                );
+            }
+
             w.commit();
             return true;
         }  catch (...) {

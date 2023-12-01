@@ -42,13 +42,14 @@ private:
     }
 
     void GetAndPrintAllBooks() {
-        std::vector<domain::Book> books{db_h_.AllBooks()};
-        out_ << json_h::SerializeBooks(books) << std::endl;
+        out_ << json_h::SerializeBooks(db_h_.AllBooks()) << std::endl;
     }
 
     domain::Query ReadQuery() {
         std::string query;
-        std::getline(in_, query);
+        if (!in_ || !std::getline(in_, query)) {
+            throw std::runtime_error("No input");
+        }
         return json_h::ParseQuery(query);
     }
 
