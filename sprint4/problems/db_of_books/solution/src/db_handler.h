@@ -20,7 +20,7 @@ public:
         pqxx::work w(conn_);
 
         w.exec(
-            "CREATE TABLE IF NOT EXISTS books(id SERIAL, title varchar(100) NOT NULL, author varchar(100) NOT NULL, year integer NOT NULL, ISBN char(13) UNIQUE);"
+            "CREATE TABLE IF NOT EXISTS books(id SERIAL PRIMARY KEY, title varchar(100) NOT NULL, author varchar(100) NOT NULL, year integer NOT NULL, ISBN char(13) UNIQUE);"
         );
         w.commit();
     }
@@ -33,7 +33,7 @@ public:
         try {
             if (book.ISBN != "") {
                 w.exec_params(
-                    "INSERT INTO books (id, title, author, year, ISBN) VALUES(DEFAULT, $1, $2, $3, $4)"_zv,
+                    "INSERT INTO books (id, title, author, year, ISBN) VALUES(DEFAULT, $1, $2, $3, $4);"_zv,
                     w.esc(book.title),
                     w.esc(book.author),
                     std::to_string(book.year),
@@ -41,7 +41,7 @@ public:
                 );
             } else {
                 w.exec_params(
-                    "INSERT INTO books (id, title, author, year) VALUES(DEFAULT, $1, $2, $3)"_zv,
+                    "INSERT INTO books (id, title, author, year) VALUES(DEFAULT, $1, $2, $3);"_zv,
                     w.esc(book.title),
                     w.esc(book.author),
                     std::to_string(book.year)
